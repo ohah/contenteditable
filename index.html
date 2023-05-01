@@ -1,0 +1,60 @@
+<!DOCTYPE html>
+<html lang="ko">
+
+<head>
+  <meta charset="UTF-8" />
+  <link rel="icon" type="image/svg+xml" href="/vite.svg" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Vite + TS</title>
+</head>
+
+<body>
+  <div id="app"></div>
+  <script type="module" src="/src/main.ts"></script>
+  <!-- <content-editable>
+    <div slot="title">Slot 사용법</div>
+    <div slot="content">slot의 사용법을 서술 합니다.</div>
+    asdf
+  </content-editable> -->
+  <div> asdfa </div>
+  <div style="user-select:none" contenteditable="true" id="myElement">
+    This text cannot be selected.
+  </div>
+  <script>
+    const myElement = document.getElementById('myElement');
+
+    myElement.addEventListener('mousedown', function (event) {
+      // 마우스 버튼을 누를 때
+      event.preventDefault(); // 기본 동작을 막음
+      const selection = window.getSelection();
+      selection.removeAllRanges(); // 모든 선택 영역 제거
+      const range = document.createRange();
+      range.setStart(event.target, getCaretPosition(event)); // 클릭한 위치에 caret 추가
+      selection.addRange(range); // 선택 영역 추가
+    });
+
+    function getCaretPosition(event) {
+      const range = document.createRange();
+      range.setStart(event.target, 0);
+      range.setEnd(event.target, event.target.childNodes.length);
+      const rect = range.getBoundingClientRect();
+      const x = event.clientX - rect.left;
+      let position = 0;
+      for (let i = 0; i < event.target.childNodes.length; i++) {
+        const childNode = event.target.childNodes[i];
+        if (childNode.nodeType === Node.TEXT_NODE) {
+          const childWidth = range.getClientRects()[0].width;
+          if (x < position + childWidth / 2) {
+            return range.startOffset;
+          } else {
+            range.setStart(childNode, 1);
+            position += childWidth;
+          }
+        }
+      }
+      return range.startOffset;
+    }
+  </script>
+</body>
+
+</html>

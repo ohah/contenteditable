@@ -1,0 +1,42 @@
+{
+  "name": "web-components",
+  "private": true,
+  "version": "0.0.0",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "tsc && vite build",
+    "preview": "vite preview",
+    "lint": "eslint src/**/*.{ts,tsx}",
+    "lint:fix": "eslint --fix src/**/*.{ts,tsx}",
+    "prettier": "prettier --write --config ./.prettierrc src/**/*.{ts,tsx}",
+    "test": "vitest --reporter=verbose",
+    "test:ui": "vitest --ui",
+    "coverage": "vitest run --coverage"
+  },
+  "devDependencies": {
+    "@testing-library/jest-dom": "^5.16.5",
+    "@testing-library/user-event": "^14.4.3",
+    "@typescript-eslint/eslint-plugin": "latest",
+    "@typescript-eslint/parser": "^5.59.1",
+    "@vitest/coverage-c8": "latest",
+    "@vitest/ui": "latest",
+    "eslint": "latest",
+    "eslint-config-airbnb": "latest",
+    "eslint-config-prettier": "latest",
+    "eslint-plugin-import": "latest",
+    "eslint-plugin-jsx-a11y": "latest",
+    "eslint-plugin-prettier": "latest",
+    "jsdom": "latest",
+    "msw": "latest",
+    "prettier": "latest",
+    "typescript": "latest",
+    "vite": "latest",
+    "vite-plugin-eslint": "latest",
+    "vite-tsconfig-paths": "latest",
+    "vitest": "latest"
+  },
+  "dependencies": {
+    "reflect-metadata": "^0.1.13"
+  }
+}
