@@ -1,4 +1,4 @@
-import { EditorFiberNode, EditorNode, FiberNodeWeakMap } from 'components/contenteditable';
+import { EditorFiberNode, EditorNode, FiberNodeWeakMap } from 'components/editor';
 
 /* eslint-disable no-bitwise */
 export function uuidv4() {

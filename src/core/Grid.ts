@@ -1,9 +1,10 @@
-import { RowLocation } from 'core/Row';
+import Row, { RowLocation } from 'core/Row';
 
-import { FiberNodeWeakMap } from 'components/contenteditable';
+import { EditorElement } from 'components';
+import { EditorNode, FiberNodeWeakMap } from 'components/editor';
 
 export interface Location {
-  key?: string;
+  key: string;
   x: number;
   y: number;
   width: number;
@@ -20,10 +21,11 @@ export type GridLocation = Location[];
 // }
 
 const Grid = {
-  create: (view: HTMLElement, weakMap: FiberNodeWeakMap) => {
+  create: (editor: EditorElement) => {
+    const { weakMap } = editor;
     const grid: GridLocation = [];
     window.requestAnimationFrame(() => {
-      const walker = document.createTreeWalker(view, NodeFilter.SHOW_ELEMENT, {
+      const walker = document.createTreeWalker(editor.view, NodeFilter.SHOW_ELEMENT, {
         acceptNode: function (node) {
           return NodeFilter.FILTER_ACCEPT;
           // console.log('node.nodeName', node.nodeName);
@@ -53,7 +55,13 @@ const Grid = {
         }
       }
       console.log('grid', grid);
+      const row = Row.create(editor, grid);
+      console.log('row', row);
+      editor.addObserver((e: any) => {
+        console.log('observer', e);
+      });
     });
+
     return false;
   },
 };

@@ -4,9 +4,9 @@ import typescriptLogo from './typescript.svg';
 
 import viteLogo from '/vite.svg';
 
-import { ContentEditable } from 'components';
+import { EditorElement } from 'components';
 
-const editor = new ContentEditable({
+const editor = new EditorElement({
   data: [
     {
       type: 'paragraph',
@@ -16,6 +16,11 @@ const editor = new ContentEditable({
           type: 'text',
           text: 'paragraph',
           format: ['bold'],
+        },
+        {
+          type: 'text',
+          text: 'text2',
+          format: ['italic'],
         },
         { type: 'linebreak' },
         {
@@ -97,8 +102,11 @@ const editor = new ContentEditable({
     },
   ],
 });
+console.log('editor', editor);
+// editor.cloneNode(true);
 editor.classList.add('content-ediable');
 document.body.appendChild(editor);
+// editor.append('asdf');
 // import { contentEditable } from 'components';
 
 // customElements.define('content-editable', contentEditable);

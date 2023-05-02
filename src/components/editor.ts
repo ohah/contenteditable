@@ -1,3 +1,6 @@
+/* eslint-disable new-cap */
+/* eslint-disable prefer-rest-params */
+/* eslint-disable no-constructor-return */
 /* eslint-disable @typescript-eslint/no-unused-vars */
 /* eslint-disable class-methods-use-this */
 /* eslint-disable no-useless-constructor */
@@ -30,8 +33,8 @@ interface Options {
 
 export type FiberNodeWeakMap = WeakMap<Node | HTMLElement | Text, EditorFiberNode>;
 
-@define('content-editable')
-class Contenteditable extends HTMLElement {
+@define('web-editor')
+class EditorElement extends HTMLElement {
   /**
    * 해당 엘리먼트에 포커스가 가면 json 데이터를 불러온다.
    */
@@ -43,8 +46,10 @@ class Contenteditable extends HTMLElement {
 
   #textArea: HTMLTextAreaElement;
 
+  #observers: Set<any>;
+
   static get observedAttributes() {
-    return ['c', 'l'];
+    return ['test', 'l'];
   }
 
   constructor(options?: Partial<Options>) {
@@ -52,6 +57,8 @@ class Contenteditable extends HTMLElement {
     this.#Caret = new Caret();
     this.#FiberNodeWeakMap = new WeakMap();
     this.#textArea = document.createElement('textarea');
+    this.#observers = new Set();
+
     const shadow = this.attachShadow({ mode: 'open' });
     const style = document.createElement('style');
     style.innerHTML = `
@@ -68,12 +75,13 @@ class Contenteditable extends HTMLElement {
     if (options?.data) {
       const { fragment, node } = json2EditorNode(options.data, this.#FiberNodeWeakMap);
       shadow.appendChild(fragment);
-      Grid.create(node, this.#FiberNodeWeakMap);
+      Grid.create(this);
       // (shadow as HTMLElement).contentEditable = true;
       node.addEventListener('mousedown', e => {
         const element = shadow.elementFromPoint(e.pageX, e.pageY);
         console.log('e', e.pageX, e.pageY, element);
         Editor.setCaret(this, e.pageX, e.pageY);
+        this.notifyObservers();
       });
       this.#view = node;
     } else {
@@ -86,6 +94,25 @@ class Contenteditable extends HTMLElement {
     this.#Caret.setAttribute('height', '21px');
     console.log('textarea', this.#textArea.getBoundingClientRect());
     console.log(this.#FiberNodeWeakMap);
+    setTimeout(() => {
+      this.setAttribute('test', 'test');
+    }, 1000);
+  }
+
+  addObserver(observer: any) {
+    this.#observers.add(observer);
+  }
+
+  notifyObservers() {
+    this.#observers.forEach(observer => observer(this));
+  }
+
+  removeObserver(observer: any) {
+    this.#observers.delete(observer);
+  }
+
+  get weakMap() {
+    return this.#FiberNodeWeakMap;
   }
 
   get view() {
@@ -94,10 +121,12 @@ class Contenteditable extends HTMLElement {
 
   connectedCallback() {
     console.log('Custom square element added to page.');
+    this.notifyObservers();
   }
 
   disconnectedCallback() {
     console.log('Custom square element removed from page.');
+    this.#observers.clear();
   }
 
   adoptedCallback() {
@@ -105,8 +134,9 @@ class Contenteditable extends HTMLElement {
   }
 
   attributeChangedCallback(name: any, oldValue: any, newValue: any) {
+    this.notifyObservers();
     console.log('Custom square element attributes changed.');
   }
 }
 
-export default Contenteditable;
+export default EditorElement;

@@ -1,1 +1,1 @@
-export { default as ContentEditable } from 'components/contenteditable';
+export { default as EditorElement } from 'components/editor';

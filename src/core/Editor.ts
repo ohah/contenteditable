@@ -1,10 +1,10 @@
-import { ContentEditable } from 'components';
+import { EditorElement } from 'components';
 
 const Editor = {
   isEmpty: () => {
     return false;
   },
-  setCaret: (editor: ContentEditable, x: number, y: number) => {
+  setCaret: (editor: EditorElement, x: number, y: number) => {
     console.log('view', editor.view);
   },
 };
