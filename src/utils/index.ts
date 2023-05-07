@@ -1,4 +1,4 @@
-import { EditorFiberNode, EditorNode, FiberNodeWeakMap } from 'components/editor';
+import { EditorFiberNode, EditorNode, FiberNodeWeakMap } from 'components/Editor';
 
 /* eslint-disable no-bitwise */
 export function uuidv4() {
@@ -30,7 +30,7 @@ export const json2EditorNode = (EditorNode: EditorNode[], FiberNodeWeakMap: Fibe
       const span = document.createElement('span');
       const textNode = document.createTextNode(node.text || '');
       span.appendChild(textNode);
-      FiberNodeWeakMap.set(textNode, newFiberNode);
+      FiberNodeWeakMap.set(span, newFiberNode);
       return span;
     }
     if (node.type === 'linebreak') {
@@ -38,7 +38,7 @@ export const json2EditorNode = (EditorNode: EditorNode[], FiberNodeWeakMap: Fibe
       FiberNodeWeakMap.set(br, newFiberNode);
       return br;
     }
-    FiberNodeWeakMap.set(element, newFiberNode);
+    // FiberNodeWeakMap.set(element, newFiberNode);
     return element;
   };
   const node = EditorNode.map(item => createNode(item));

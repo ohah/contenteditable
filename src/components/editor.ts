@@ -5,10 +5,10 @@
 /* eslint-disable class-methods-use-this */
 /* eslint-disable no-useless-constructor */
 
-import { Editor, Grid } from 'core';
+import { Grid } from 'core';
+import { ViewNode } from 'core/Grid';
 
-import Caret from './caret';
-
+import { Selection } from 'components';
 import { define } from 'components/default';
 import { json2EditorNode } from 'utils';
 
@@ -31,7 +31,7 @@ interface Options {
   data: EditorNode[];
 }
 
-export type FiberNodeWeakMap = WeakMap<Node | HTMLElement | Text, EditorFiberNode>;
+export type FiberNodeWeakMap = WeakMap<ViewNode, EditorFiberNode>;
 
 @define('web-editor')
 class EditorElement extends HTMLElement {
@@ -40,11 +40,14 @@ class EditorElement extends HTMLElement {
    */
   #FiberNodeWeakMap: FiberNodeWeakMap;
 
-  #Caret: Caret;
+  #Selection: Selection;
+
+  /**
+   * 스크롤. 이벤트 등의 편의를 위해 모든 요소의 부모 wrapper 요소를 하나 추가.
+   */
+  wrapper: HTMLDivElement;
 
   #view: HTMLDivElement;
-
-  #textArea: HTMLTextAreaElement;
 
   #observers: Set<any>;
 
@@ -54,14 +57,26 @@ class EditorElement extends HTMLElement {
 
   constructor(options?: Partial<Options>) {
     super();
-    this.#Caret = new Caret();
     this.#FiberNodeWeakMap = new WeakMap();
-    this.#textArea = document.createElement('textarea');
+    // this.setAttribute('tabIndex', '-1');
+    this.wrapper = document.createElement('div');
+    this.wrapper.setAttribute('tabIndex', '-1');
+    this.#view = document.createElement('div');
+    // this.wrapper.style.position = 'relative';
+    // this.wrapper.style.height = '300px';
+    // this.wrapper.style.overflowY = 'auto';
+    // this.wrapper.style.userSelect = 'none';
     this.#observers = new Set();
 
     const shadow = this.attachShadow({ mode: 'open' });
     const style = document.createElement('style');
     style.innerHTML = `
+      .editor:focus{
+        border:1px solid red;
+      }
+      .editor{
+        border:1px solid blue;
+      }
       html{
         outline: none;
         white-space: pre-wrap;
@@ -72,32 +87,33 @@ class EditorElement extends HTMLElement {
       }
     `;
     shadow.appendChild(style);
+    shadow.appendChild(this.wrapper);
     if (options?.data) {
       const { fragment, node } = json2EditorNode(options.data, this.#FiberNodeWeakMap);
-      shadow.appendChild(fragment);
-      Grid.create(this);
+      this.wrapper.appendChild(fragment);
       // (shadow as HTMLElement).contentEditable = true;
-      node.addEventListener('mousedown', e => {
-        const element = shadow.elementFromPoint(e.pageX, e.pageY);
-        console.log('e', e.pageX, e.pageY, element);
-        Editor.setCaret(this, e.pageX, e.pageY);
-        this.notifyObservers();
-      });
       this.#view = node;
+      // this.#view.style.height = '200px';
+      // this.#view.style.overflowY = 'auto';
     } else {
       this.#view = document.createElement('div');
       this.#view.classList.add('editor');
-      shadow.appendChild(this.#view);
+      this.wrapper.appendChild(this.#view);
     }
+    this.render();
     // shadow.appendChild(this.#textArea);
-    shadow.appendChild(this.#Caret);
-    this.#Caret.setAttribute('height', '21px');
-    console.log('textarea', this.#textArea.getBoundingClientRect());
-    console.log(this.#FiberNodeWeakMap);
-    setTimeout(() => {
-      this.setAttribute('test', 'test');
-    }, 1000);
+    this.#Selection = new Selection(this);
+    this.wrapper.appendChild(this.#Selection);
+    // this.addEventListener('keydown', e => console.log('e', e.key));
+    // this.#Caret.setAttribute('height', '21px');
+    // console.log('textarea', this.#textArea.getBoundingClientRect());
+    // console.log(this.#FiberNodeWeakMap);
+    // setTimeout(() => {
+    //   this.setAttribute('test', 'test');
+    // }, 1000);
   }
+
+  render() {}
 
   addObserver(observer: any) {
     this.#observers.add(observer);
@@ -111,6 +127,10 @@ class EditorElement extends HTMLElement {
     this.#observers.delete(observer);
   }
 
+  get Selection() {
+    return this.#Selection;
+  }
+
   get weakMap() {
     return this.#FiberNodeWeakMap;
   }
@@ -121,6 +141,8 @@ class EditorElement extends HTMLElement {
 
   connectedCallback() {
     console.log('Custom square element added to page.');
+    // 커스텀 Caret을 위한 Grid
+    Grid.create(this);
     this.notifyObservers();
   }
 

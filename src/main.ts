@@ -1,8 +1,4 @@
 import './style.css';
-import { setupCounter } from './counter.ts';
-import typescriptLogo from './typescript.svg';
-
-import viteLogo from '/vite.svg';
 
 import { EditorElement } from 'components';
 
@@ -22,6 +18,7 @@ const editor = new EditorElement({
           text: 'text2',
           format: ['italic'],
         },
+        { type: 'linebreak' },
         { type: 'linebreak' },
         {
           type: 'text',

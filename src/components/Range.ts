@@ -1,10 +1,14 @@
 /* eslint-disable no-useless-constructor */
 /* eslint-disable class-methods-use-this */
 
-import { define } from 'components/default';
+import { Editor, Selection } from 'core';
+import { RowLocation } from 'core/Row';
 
-@define('editor-caret')
-class Caret extends HTMLElement {
+import { define } from 'components/default';
+import EditorElement from 'components/Editor';
+
+@define('editor-range')
+class Range extends HTMLElement {
   interval: ReturnType<typeof setInterval> | undefined;
 
   constructor() {
@@ -54,4 +58,4 @@ class Caret extends HTMLElement {
   }
 }
 // customElements.define('editor-cursor', CursorElement);
-export default Caret;
+export default Range;

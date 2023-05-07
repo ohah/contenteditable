@@ -1,5 +1,6 @@
 import { Cell } from 'core';
 import { GridLocation } from 'core/Grid';
+import { Location } from 'core/Grid';
 
 import { EditorElement } from 'components';
 
@@ -10,12 +11,12 @@ export interface RowLocation extends Location {
 }
 
 const Row = {
-  create: (editor: EditorElement, grid: GridLocation) => {
+  create: (editor: EditorElement, grid: GridLocation[]) => {
     const { weakMap } = editor;
     let currTop = 0;
     let line = 1;
     const row = grid.map(row => {
-      if (currTop === 0) currTop = row.top;
+      if (currTop === 0 && row.top === 0) currTop = row.top;
       if (row.top > currTop) {
         currTop = row.top;
         line += 1;
@@ -25,9 +26,11 @@ const Row = {
         ...row,
         cell: [],
       } as never as RowLocation;
-      lineRow.cell = Cell.create(editor, lineRow);
+      lineRow.width = row.node.nodeName.toLowerCase() === 'br' ? editor.offsetWidth - lineRow.right : lineRow.width;
+      lineRow.right = row.node.nodeName.toLowerCase() === 'br' ? editor.offsetWidth - lineRow.right : lineRow.right;
+      lineRow.cell = Cell.create(editor, row);
       return lineRow;
-    }) as never as RowLocation;
+    });
     return row;
   },
 };
