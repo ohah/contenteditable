@@ -10,7 +10,7 @@ import { ViewNode } from 'core/Grid';
 
 import { Selection } from 'components';
 import { define } from 'components/default';
-import { json2EditorNode } from 'utils';
+import { json2EditorFiberNode, json2EditorNode } from 'utils';
 
 export interface EditorFiberNode extends EditorNode {
   key: string;
@@ -95,12 +95,13 @@ class EditorElement extends HTMLElement {
     shadow.appendChild(this.wrapper);
     this.data = options?.data || [];
     if (this.data) {
-      const { fragment, node, EditorFiberNode } = json2EditorNode(this.data, this.#FiberNodeWeakMap);
-      this.wrapper.appendChild(fragment);
-      console.log(EditorFiberNode);
-      this.FiberData = EditorFiberNode;
+      this.FiberData = json2EditorFiberNode(this.data);
+      // const { fragment, node, EditorFiberNode } = json2EditorNode(this.data, this.#FiberNodeWeakMap);
+      // this.wrapper.appendChild(fragment);
+      // console.log(EditorFiberNode);
+      // this.FiberData = EditorFiberNode;
       // (shadow as HTMLElement).contentEditable = true;
-      this.#view = node;
+      // this.#view = node;
       // this.#view.style.height = '200px';
       // this.#view.style.overflowY = 'auto';
     } else {
@@ -121,7 +122,12 @@ class EditorElement extends HTMLElement {
     // }, 1000);
   }
 
-  render() {}
+  render() {
+    const { fragment, node } = json2EditorNode(this.FiberData, this.#FiberNodeWeakMap);
+    this.#view.remove();
+    this.wrapper.appendChild(fragment);
+    this.#view = node;
+  }
 
   addObserver(observer: any) {
     this.#observers.add(observer);

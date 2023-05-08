@@ -33,20 +33,39 @@ class Selection extends HTMLElement {
     this.#grid = [];
     this.editor = editor;
     this.#textArea = document.createElement('textarea');
-    this.#textArea.addEventListener('beforeinput', e => {
-      // console.log('beforeInput', e);
-      if (this.state.anchorNode) {
-        const nodeKey = this.editor.weakMap.get(this.state.anchorNode);
-        if (nodeKey) nodeKey.text = this.#textArea.value;
-        this.state.anchorNode.textContent = this.#textArea.value;
-        Grid.create(this.editor);
+    this.#textArea.addEventListener('input', (e: any) => {
+      const event = e as InputEvent;
+      const { inputType } = event;
+      if (inputType === 'insertText') {
+        if (this.state.anchorNode) {
+          const nodeKey = this.editor.weakMap.get(this.state.anchorNode);
+          const splitText = nodeKey?.text?.split('');
+          console.log('splitText', nodeKey);
+          if (nodeKey && this.state.location) {
+            const text = [...(splitText?.slice(0, this.state.anchorOffset || 0) || []), e.data, ...(splitText?.slice(this.state.anchorOffset || 0, splitText.length) || [])].join('');
+            console.log('test', [...(splitText?.slice(0, this.state.anchorOffset || 0) || []), e.data, ...(splitText?.slice(this.state.anchorOffset || 0, splitText.length) || [])].join(''));
+            this.state.location.text = text;
+            nodeKey.text = [...(splitText?.slice(0, this.state.anchorOffset || 0) || []), e.data, ...(splitText?.slice(this.state.anchorOffset || 0, splitText.length) || [])].join('');
+            console.log(this.editor.weakMap);
+          }
+          this.editor.render();
+          Grid.create(this.editor);
+          this.modify('move', 'backward', 'character');
+          // console.log('input', e, this.state.anchorNode);
+          // const split = (this.state.anchorNode.firstChild as Text).splitText(this.state.anchorOffset || 0);
+          // split.before(e.data || '');
+          // console.log(this.state.anchorNode.firstChild, split.textContent);
+          // this.state.anchorNode.normalize();
+          // if (nodeKey) nodeKey.text = this.#textArea.value;
+          // this.state.anchorNode.textContent = this.#textArea.value;
+        }
       }
     });
-    this.#textArea.style.width = '0px';
-    this.#textArea.style.height = '0px';
+    // this.#textArea.style.width = '0px';
+    // this.#textArea.style.height = '0px';
     this.#textArea.style.lineHeight = '1';
-    this.#textArea.style.padding = '0px';
-    this.#textArea.style.border = 'none';
+    // this.#textArea.style.padding = '0px';
+    // this.#textArea.style.border = 'none';
     // this.#textArea.style.whiteSpace = 'nowrap';
     // this.#textArea.style.width = '1em';
     this.#textArea.style.overflow = 'auto';
@@ -111,10 +130,10 @@ class Selection extends HTMLElement {
     this.editor.focus();
     window.requestAnimationFrame(() => {
       if (this.state.anchorNode) {
-        const nodeKey = this.editor.weakMap.get(this.state.anchorNode);
-        this.#textArea.value = nodeKey?.text || '';
-        this.#textArea.selectionStart = this.state.anchorOffset || 0;
-        this.#textArea.selectionEnd = this.state.anchorOffset || 0;
+        // const nodeKey = this.editor.weakMap.get(this.state.anchorNode);
+        // this.#textArea.value = nodeKey?.text || '';
+        // this.#textArea.selectionStart = this.state.anchorOffset || 0;
+        // this.#textArea.selectionEnd = this.state.anchorOffset || 0;
       }
       this.#textArea.focus();
     });
@@ -208,6 +227,7 @@ class Selection extends HTMLElement {
     this.style.inset = '0';
     this.style.width = '100%';
     this.style.height = '100%';
+    this.style.zIndex = '-1';
     // this.style.width = '5px';
     // // this.style.height = `21px`;
     // this.style.position = 'absolute';

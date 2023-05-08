@@ -1,7 +1,6 @@
 /* eslint-disable no-useless-constructor */
 /* eslint-disable class-methods-use-this */
 
-import { Editor, Selection } from 'core';
 import { RowLocation } from 'core/Row';
 
 import { define } from 'components/default';
