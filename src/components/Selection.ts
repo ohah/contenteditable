@@ -2,12 +2,13 @@
 /* eslint-disable no-useless-constructor */
 /* eslint-disable class-methods-use-this */
 
-import { Location } from 'core/Grid';
+import Grid, { Location } from 'core/Grid';
 import { initialSelectState, SelectionState, State } from 'core/State';
 
 import { Caret, Range } from 'components';
 import { define } from 'components/default';
 import EditorElement from 'components/Editor';
+import { json2EditorNode } from 'utils';
 
 @define('editor-selection')
 class Selection extends HTMLElement {
@@ -32,15 +33,24 @@ class Selection extends HTMLElement {
     this.#grid = [];
     this.editor = editor;
     this.#textArea = document.createElement('textarea');
+    this.#textArea.addEventListener('beforeinput', e => {
+      // console.log('beforeInput', e);
+      if (this.state.anchorNode) {
+        const nodeKey = this.editor.weakMap.get(this.state.anchorNode);
+        if (nodeKey) nodeKey.text = this.#textArea.value;
+        this.state.anchorNode.textContent = this.#textArea.value;
+        Grid.create(this.editor);
+      }
+    });
     this.#textArea.style.width = '0px';
     this.#textArea.style.height = '0px';
     this.#textArea.style.lineHeight = '1';
     this.#textArea.style.padding = '0px';
     this.#textArea.style.border = 'none';
-    this.#textArea.style.whiteSpace = 'nowrap';
-    this.#textArea.style.width = '1em';
+    // this.#textArea.style.whiteSpace = 'nowrap';
+    // this.#textArea.style.width = '1em';
     this.#textArea.style.overflow = 'auto';
-    this.#textArea.style.resize = 'vertical';
+    // this.#textArea.style.resize = 'vertical';
 
     this.state = initialSelectState;
     this.#wrapper = document.createElement('div');
@@ -68,9 +78,9 @@ class Selection extends HTMLElement {
       if (e.key === 'ArrowLeft') {
         this.modify('move', 'forward', 'character');
       }
-      if (this.state.location?.key) {
-        console.log('this.editor', this.editor);
-      }
+      // if (this.state.location?.key) {
+      //   console.log('this.editor', this.editor);
+      // }
     });
   }
 
@@ -99,6 +109,15 @@ class Selection extends HTMLElement {
       // this.removeChild(this.#caret)
     }
     this.editor.focus();
+    window.requestAnimationFrame(() => {
+      if (this.state.anchorNode) {
+        const nodeKey = this.editor.weakMap.get(this.state.anchorNode);
+        this.#textArea.value = nodeKey?.text || '';
+        this.#textArea.selectionStart = this.state.anchorOffset || 0;
+        this.#textArea.selectionEnd = this.state.anchorOffset || 0;
+      }
+      this.#textArea.focus();
+    });
   }
 
   modify(alter: 'move' | 'extend', direction: 'forward' | 'backward', granularity: 'character' | 'word' | 'sentence' | 'line' | 'paragraph') {

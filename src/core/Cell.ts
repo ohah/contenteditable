@@ -6,10 +6,7 @@ import { EditorElement } from 'components';
 const Cell = {
   create: (editor: EditorElement, row: Location) => {
     const { weakMap } = editor;
-    // const cell = weakMap.get(row.node);
     const cloneNode = row.node.cloneNode(true);
-    // editor.appendChild(cloneNode);
-    console.log('cloneNode', row.node);
     let sum = 0;
     const columns: Location[] = [];
     if (cloneNode.firstChild instanceof Text) {

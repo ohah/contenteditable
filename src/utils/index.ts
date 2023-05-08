@@ -13,12 +13,14 @@ export const json2EditorNode = (EditorNode: EditorNode[], FiberNodeWeakMap: Fibe
   const fragment = document.createDocumentFragment();
   const div = document.createElement('div');
   div.classList.add('editor');
+  const EditorFiberNode: EditorFiberNode[] = [];
   const createNode = (node: EditorNode) => {
     const element = document.createElement(node.tag || 'p');
     const newFiberNode: EditorFiberNode = {
       ...node,
       key: uuidv4(),
     };
+    EditorFiberNode.push(newFiberNode);
     if (node.children) {
       node.children
         .map(item => createNode(item))
@@ -30,12 +32,12 @@ export const json2EditorNode = (EditorNode: EditorNode[], FiberNodeWeakMap: Fibe
       const span = document.createElement('span');
       const textNode = document.createTextNode(node.text || '');
       span.appendChild(textNode);
-      FiberNodeWeakMap.set(span, newFiberNode);
+      FiberNodeWeakMap.set(span, EditorFiberNode[EditorFiberNode.length - 1]);
       return span;
     }
     if (node.type === 'linebreak') {
       const br = document.createElement('br');
-      FiberNodeWeakMap.set(br, newFiberNode);
+      FiberNodeWeakMap.set(br, EditorFiberNode[EditorFiberNode.length - 1]);
       return br;
     }
     // FiberNodeWeakMap.set(element, newFiberNode);
@@ -50,5 +52,6 @@ export const json2EditorNode = (EditorNode: EditorNode[], FiberNodeWeakMap: Fibe
   return {
     fragment,
     node: div,
+    EditorFiberNode,
   };
 };

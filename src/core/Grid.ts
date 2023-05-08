@@ -1,10 +1,7 @@
 /* eslint-disable no-param-reassign */
 import Row, { RowLocation } from 'core/Row';
 
-import Cell from './Cell';
-
 import { EditorElement } from 'components';
-import { EditorNode, FiberNodeWeakMap } from 'components/Editor';
 
 /**
  * 실제로 화면에 출력되는 노드
@@ -75,7 +72,7 @@ const Grid = {
           }
         }
       }
-      console.log('grid', grid);
+      // console.log('grid', grid);
       // const result = Row.create(editor, grid);
       const row = Row.create(editor, grid);
       const Grid = row.reduce((acc: any[], curr: Partial<RowLocation>) => {

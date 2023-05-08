@@ -42,6 +42,10 @@ class EditorElement extends HTMLElement {
 
   #Selection: Selection;
 
+  data: EditorNode[];
+
+  FiberData: EditorFiberNode[];
+
   /**
    * 스크롤. 이벤트 등의 편의를 위해 모든 요소의 부모 wrapper 요소를 하나 추가.
    */
@@ -62,6 +66,7 @@ class EditorElement extends HTMLElement {
     this.wrapper = document.createElement('div');
     this.wrapper.setAttribute('tabIndex', '-1');
     this.#view = document.createElement('div');
+    this.FiberData = [];
     // this.wrapper.style.position = 'relative';
     // this.wrapper.style.height = '300px';
     // this.wrapper.style.overflowY = 'auto';
@@ -88,9 +93,12 @@ class EditorElement extends HTMLElement {
     `;
     shadow.appendChild(style);
     shadow.appendChild(this.wrapper);
-    if (options?.data) {
-      const { fragment, node } = json2EditorNode(options.data, this.#FiberNodeWeakMap);
+    this.data = options?.data || [];
+    if (this.data) {
+      const { fragment, node, EditorFiberNode } = json2EditorNode(this.data, this.#FiberNodeWeakMap);
       this.wrapper.appendChild(fragment);
+      console.log(EditorFiberNode);
+      this.FiberData = EditorFiberNode;
       // (shadow as HTMLElement).contentEditable = true;
       this.#view = node;
       // this.#view.style.height = '200px';
@@ -133,6 +141,10 @@ class EditorElement extends HTMLElement {
 
   get weakMap() {
     return this.#FiberNodeWeakMap;
+  }
+
+  set view(view: HTMLDivElement) {
+    this.#view = view;
   }
 
   get view() {
