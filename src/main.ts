@@ -10,7 +10,7 @@ const editor = new EditorElement({
       children: [
         {
           type: 'text',
-          text: 'paragraph',
+          text: 'paragraphparagraphparagraphparagraphparagraphparagraphparagraphparagraphparagraphparagraphparagraphparagraphparagraphparagraphparagraphparagraphparagraphparagraphparagraphparagraphparagraphparagraphparagraphparagraphparagraphparagraphparagraphparagraphparagraphparagraphparagraphparagraphparagraphparagraphparagraphparagraphparagraphparagraphparagraphparagraph',
           format: ['bold'],
         },
         {

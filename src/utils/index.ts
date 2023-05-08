@@ -1,3 +1,4 @@
+/* eslint-disable no-param-reassign */
 import { EditorFiberNode, EditorNode, FiberNodeWeakMap } from 'components/Editor';
 
 /* eslint-disable no-bitwise */
@@ -11,28 +12,25 @@ export function uuidv4() {
 
 export const json2EditorFiberNode = (EditorNode: EditorNode[]) => {
   const createFiberNode = (node: EditorNode) => {
-    const newFiberNode: EditorFiberNode = {
+    if (node && node.children && node.children?.length > 0) {
+      node.children = node.children.map(item => createFiberNode(item));
+    }
+    const newFiberNode = {
       ...node,
       key: uuidv4(),
     };
-    return newFiberNode;
+    return newFiberNode as EditorFiberNode;
   };
   const node = EditorNode.map(item => createFiberNode(item));
   return node;
 };
 
-export const json2EditorNode = (EditorNode: EditorNode[], FiberNodeWeakMap: FiberNodeWeakMap) => {
+export const json2EditorNode = (EditorNode: EditorFiberNode[], FiberNodeWeakMap: any) => {
   const fragment = document.createDocumentFragment();
   const div = document.createElement('div');
   div.classList.add('editor');
-  const EditorFiberNode: EditorFiberNode[] = [];
-  const createNode = (node: EditorNode) => {
+  const createNode = (node: EditorFiberNode) => {
     const element = document.createElement(node.tag || 'p');
-    const newFiberNode: EditorFiberNode = {
-      ...node,
-      key: uuidv4(),
-    };
-    EditorFiberNode.push(newFiberNode);
     if (node.children) {
       node.children
         .map(item => createNode(item))
@@ -44,12 +42,12 @@ export const json2EditorNode = (EditorNode: EditorNode[], FiberNodeWeakMap: Fibe
       const span = document.createElement('span');
       const textNode = document.createTextNode(node.text || '');
       span.appendChild(textNode);
-      FiberNodeWeakMap.set(span, newFiberNode);
+      FiberNodeWeakMap.set(span, node);
       return span;
     }
     if (node.type === 'linebreak') {
       const br = document.createElement('br');
-      FiberNodeWeakMap.set(br, newFiberNode);
+      FiberNodeWeakMap.set(br, node);
       return br;
     }
     // FiberNodeWeakMap.set(element, EditorFiberNode[EditorFiberNode.length - 1]);
@@ -64,6 +62,5 @@ export const json2EditorNode = (EditorNode: EditorNode[], FiberNodeWeakMap: Fibe
   return {
     fragment,
     node: div,
-    EditorFiberNode,
   };
 };

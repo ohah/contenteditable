@@ -1,4 +1,6 @@
+/* eslint-disable no-loop-func */
 /* eslint-disable no-param-reassign */
+import { Cell } from 'core';
 import Row, { RowLocation } from 'core/Row';
 
 import { EditorElement } from 'components';
@@ -9,7 +11,7 @@ import { EditorElement } from 'components';
 export type ViewNode = Node | HTMLElement | Text;
 
 export interface Location {
-  order: number;
+  whiteSpaceLine: number;
   key: string;
   x: number;
   y: number;
@@ -46,29 +48,34 @@ const Grid = {
           return NodeFilter.FILTER_ACCEPT;
         },
       });
-      let order = 0;
+      const order = 0;
       while (walker.nextNode()) {
         const node = walker.currentNode as Element;
         if (['span', 'br'].includes(node.nodeName.toLowerCase())) {
           // const key = weakMap.get(Array.from(node.childNodes).find(item => item.nodeName === '#text') as never)?.key;
-          const key = weakMap.get(walker.currentNode)?.key;
+          const key = weakMap.get(node)?.key;
           if (key) {
-            const { x, y, top, left, width, height, right, bottom } = node.getBoundingClientRect();
-            grid.push({
-              key,
-              order,
-              x: x - editorRect.x,
-              y: y - editorRect.y,
-              top: top - editorRect.top,
-              left: left - editorRect.left,
-              width,
-              height,
-              right: right - editorRect.left,
-              bottom: bottom - editorRect.top,
-              last: !!walker.currentNode.parentElement?.lastChild?.isEqualNode(walker.currentNode) || walker.currentNode.nodeName.toLowerCase() === 'br',
-              node: walker.currentNode,
+            // const { x, y, top, left, width, height, right, bottom } = node.getBoundingClientRect();
+            // console.log('node.getBoundingClientRect()', node.getClientRects());
+            const rects = node.getClientRects();
+            Array.from(rects).forEach((rect, i) => {
+              const { x, y, top, left, width, height, right, bottom } = rect;
+              grid.push({
+                key,
+                x: x - editorRect.x,
+                y: y - editorRect.y,
+                top: top - editorRect.top,
+                left: left - editorRect.left,
+                width,
+                whiteSpaceLine: i,
+                height,
+                right: right - editorRect.left,
+                bottom: bottom - editorRect.top,
+                last: (!!walker.currentNode.parentElement?.lastChild?.isEqualNode(walker.currentNode) && rects.length === i - 1) || walker.currentNode.nodeName.toLowerCase() === 'br',
+                node: walker.currentNode,
+              });
             });
-            order += 1;
+            // order += 1;
           }
         }
       }
@@ -84,9 +91,10 @@ const Grid = {
         return [...acc, curr];
       }, [] as Location[]) as Location[];
       // console.log('grid', Grid);
-      // Grid.forEach(column => {
-      //   if (column.last) Cell.testBlock(editor, column);
-      // });
+      Grid.forEach(column => {
+        // if (column.last)
+        Cell.testBlock(editor, column);
+      });
       // console.log('Grid', Grid);
       // console.log('row', row);
       editor.Selection.grid = Grid;

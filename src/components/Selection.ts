@@ -49,7 +49,6 @@ class Selection extends HTMLElement {
             console.log(this.editor.weakMap);
           }
           this.editor.render();
-          Grid.create(this.editor);
           this.modify('move', 'backward', 'character');
           // console.log('input', e, this.state.anchorNode);
           // const split = (this.state.anchorNode.firstChild as Text).splitText(this.state.anchorOffset || 0);

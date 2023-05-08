@@ -13,6 +13,7 @@ import { define } from 'components/default';
 import { json2EditorFiberNode, json2EditorNode } from 'utils';
 
 export interface EditorFiberNode extends EditorNode {
+  children?: EditorFiberNode[];
   key: string;
 }
 
@@ -67,6 +68,8 @@ class EditorElement extends HTMLElement {
     this.wrapper.setAttribute('tabIndex', '-1');
     this.#view = document.createElement('div');
     this.FiberData = [];
+    this.#Selection = new Selection(this);
+    this.wrapper.appendChild(this.#Selection);
     // this.wrapper.style.position = 'relative';
     // this.wrapper.style.height = '300px';
     // this.wrapper.style.overflowY = 'auto';
@@ -96,23 +99,13 @@ class EditorElement extends HTMLElement {
     this.data = options?.data || [];
     if (this.data) {
       this.FiberData = json2EditorFiberNode(this.data);
-      // const { fragment, node, EditorFiberNode } = json2EditorNode(this.data, this.#FiberNodeWeakMap);
-      // this.wrapper.appendChild(fragment);
-      // console.log(EditorFiberNode);
-      // this.FiberData = EditorFiberNode;
-      // (shadow as HTMLElement).contentEditable = true;
-      // this.#view = node;
-      // this.#view.style.height = '200px';
-      // this.#view.style.overflowY = 'auto';
     } else {
       this.#view = document.createElement('div');
       this.#view.classList.add('editor');
       this.wrapper.appendChild(this.#view);
     }
-    this.render();
     // shadow.appendChild(this.#textArea);
-    this.#Selection = new Selection(this);
-    this.wrapper.appendChild(this.#Selection);
+    this.render();
     // this.addEventListener('keydown', e => console.log('e', e.key));
     // this.#Caret.setAttribute('height', '21px');
     // console.log('textarea', this.#textArea.getBoundingClientRect());
@@ -123,10 +116,11 @@ class EditorElement extends HTMLElement {
   }
 
   render() {
+    this.#view?.remove();
     const { fragment, node } = json2EditorNode(this.FiberData, this.#FiberNodeWeakMap);
-    this.#view.remove();
     this.wrapper.appendChild(fragment);
     this.#view = node;
+    Grid.create(this);
   }
 
   addObserver(observer: any) {

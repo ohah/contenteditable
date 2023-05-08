@@ -29,6 +29,7 @@ const Row = {
       lineRow.width = row.node.nodeName.toLowerCase() === 'br' ? editor.offsetWidth - lineRow.right : lineRow.width;
       lineRow.right = row.node.nodeName.toLowerCase() === 'br' ? editor.offsetWidth - lineRow.right : lineRow.right;
       lineRow.cell = Cell.create(editor, row);
+      console.log('row', row);
       return lineRow;
     });
     return row;
