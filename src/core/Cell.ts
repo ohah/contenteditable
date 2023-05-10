@@ -1,20 +1,41 @@
+/* eslint-disable no-param-reassign */
 /* eslint-disable no-restricted-syntax */
 import { Location } from 'core/Grid';
 
 import { EditorElement } from 'components';
+export interface WhiteSpace {
+  left: number;
+  nowrap: boolean;
+}
 
 const Cell = {
-  create: (editor: EditorElement, row: Location) => {
+  create: (editor: EditorElement, row: Location, nextKey: string, whiteSpace: WhiteSpace = { left: 0, nowrap: false }) => {
     const { weakMap } = editor;
     const cloneNode = row.node.cloneNode(true);
+    // console.log('row.node', row.node);
     let sum = 0;
     const columns: Location[] = [];
     if (cloneNode.firstChild instanceof Text) {
       const text = cloneNode.firstChild;
-      const textArr = text.textContent?.split('') || [];
-      textArr.forEach((char, i) => {
+      if (nextKey !== row.key) {
+        // console.log('??', row.node);
+        whiteSpace.left = 0;
+        whiteSpace.nowrap = false;
+      }
+      const textArr = text.textContent?.substring(whiteSpace.left, text.textContent.length).split('') || [];
+      // console.log('textArr', textArr);
+      /**
+       * left 텍스트 시작
+       * nowrap: 텍스트가 한줄이면 true 아니면 false
+       */
+      textArr.every((char, i) => {
         cloneNode.textContent = char;
         const { width } = Cell.getTextWidth(char, row.node as Element);
+        if (row.left + sum + width > editor.view.offsetWidth) {
+          whiteSpace.left = i;
+          whiteSpace.nowrap = false;
+          return false;
+        }
         const column = {
           ...row,
           last: false,
@@ -44,9 +65,15 @@ const Cell = {
           columns.push(column);
           // Cell.testBlock(editor, column);
         }
+        whiteSpace.left = 0;
+        whiteSpace.nowrap = true;
+        return true;
       });
     }
-    return columns;
+    return {
+      columns,
+      whiteSpace,
+    };
   },
   getTextWidth: (text: string, element: Element) => {
     const offscreen = new OffscreenCanvas(0, 0);
@@ -66,7 +93,8 @@ const Cell = {
     div.style.width = `${column.width}px`;
     div.style.height = `${column.height}px`;
     div.style.borderRight = '1px solid';
-    div.dataset.content = column.node.textContent || '';
+    // div.dataset.content = column.node.textContent || '';
+    div.dataset.content = column.text || column.node.nodeName.toLowerCase();
     div.style.backgroundColor = `rgba(33, 150, 243, 0.5)`;
     editor.wrapper.appendChild(div);
   },

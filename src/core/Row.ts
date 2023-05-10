@@ -12,10 +12,13 @@ export interface RowLocation extends Location {
 
 const Row = {
   create: (editor: EditorElement, grid: GridLocation[]) => {
-    const { weakMap } = editor;
     let currTop = 0;
     let line = 1;
-    const row = grid.map(row => {
+    let whiteSpace = {
+      left: 0,
+      nowrap: false,
+    };
+    const row = grid.map((row, i) => {
       if (currTop === 0 && row.top === 0) currTop = row.top;
       if (row.top > currTop) {
         currTop = row.top;
@@ -28,8 +31,13 @@ const Row = {
       } as never as RowLocation;
       lineRow.width = row.node.nodeName.toLowerCase() === 'br' ? editor.offsetWidth - lineRow.right : lineRow.width;
       lineRow.right = row.node.nodeName.toLowerCase() === 'br' ? editor.offsetWidth - lineRow.right : lineRow.right;
-      lineRow.cell = Cell.create(editor, row);
-      console.log('row', row);
+      const nextKey = grid[i + 1];
+      const { columns, whiteSpace: newWhiteSpace } = Cell.create(editor, row, nextKey?.key, whiteSpace);
+      whiteSpace = {
+        ...newWhiteSpace,
+      };
+      // console.log('row', row, whiteSpace);
+      lineRow.cell = columns;
       return lineRow;
     });
     return row;

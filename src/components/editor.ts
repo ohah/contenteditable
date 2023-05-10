@@ -154,7 +154,7 @@ class EditorElement extends HTMLElement {
   connectedCallback() {
     console.log('Custom square element added to page.');
     // 커스텀 Caret을 위한 Grid
-    Grid.create(this);
+    // Grid.create(this);
     this.notifyObservers();
   }
 
