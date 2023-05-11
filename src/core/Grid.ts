@@ -90,6 +90,7 @@ const Grid = {
             range.setStart(node, 0);
             range.setEnd(node, 0);
             const { x, y, top, left, width, height, right, bottom } = node.getBoundingClientRect();
+            // 해당코드 작업해야함
             grid.push({
               key: weakMap.get(node)?.key || '',
               x: x - editorRect.x,
@@ -98,7 +99,7 @@ const Grid = {
               left: left - editorRect.left,
               width: editor.offsetWidth - left,
               height,
-              right: 500,
+              right: editor.offsetWidth - left,
               bottom: bottom - editorRect.top,
               node: walker.currentNode,
             });
