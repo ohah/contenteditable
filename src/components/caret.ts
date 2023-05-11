@@ -19,7 +19,7 @@ class Caret extends HTMLElement {
     this.style.width = '5px';
     // this.style.height = `21px`;
     this.style.position = 'absolute';
-    this.style.backgroundColor = 'rgba(100,100,100,0.75)';
+    this.style.backgroundColor = 'rgba(255,0,0,0.75)';
     this.style.borderColor = '#000000';
     this.style.userSelect = 'none';
     // this.interval = setInterval(() => {

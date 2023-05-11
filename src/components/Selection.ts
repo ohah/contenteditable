@@ -121,7 +121,7 @@ class Selection extends HTMLElement {
       this.#wrapper.appendChild(this.#caret);
       this.#caret.setAttribute('top', `${this.state.location?.top}px`);
       this.#caret.setAttribute('left', `${this.state.location?.left}px`);
-      this.#caret.setAttribute('width', `2px`);
+      this.#caret.setAttribute('width', `${this.state.location!.width >= 1 ? this.state.location?.width : '5'}px`);
       this.#caret.setAttribute('height', `${this.state.location?.height}px`);
     } else {
       // this.removeChild(this.#caret)

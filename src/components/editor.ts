@@ -84,6 +84,7 @@ class EditorElement extends HTMLElement {
       }
       .editor{
         border:1px solid blue;
+        padding:5px;
       }
       html{
         outline: none;
@@ -106,6 +107,10 @@ class EditorElement extends HTMLElement {
     }
     // shadow.appendChild(this.#textArea);
     this.render();
+    // document.addEventListener('selectionchange', e => {
+    //   console.log('selectin', (shadow as never as Document).getSelection());
+    // });
+    // this.#view.contentEditable = 'true';
     // this.addEventListener('keydown', e => console.log('e', e.key));
     // this.#Caret.setAttribute('height', '21px');
     // console.log('textarea', this.#textArea.getBoundingClientRect());

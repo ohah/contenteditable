@@ -48,23 +48,6 @@ const Cell = {
         };
         columns.push(column);
         sum += width;
-        /**
-         * 마지막 노드일때 하나 더 추가해줌.. 임시..
-         */
-        if (i === textArr.length - 1 && row.last === true) {
-          const column = {
-            ...row,
-            last: true,
-            left: row.left + sum,
-            x: row.left + sum,
-            right: editor.offsetWidth - sum,
-            width: editor.offsetWidth - sum,
-            text: char,
-            offset: i,
-          };
-          columns.push(column);
-          // Cell.testBlock(editor, column);
-        }
         whiteSpace.left = 0;
         whiteSpace.nowrap = true;
         return true;
