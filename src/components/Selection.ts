@@ -20,6 +20,8 @@ class Selection extends HTMLElement {
 
   #caret: Caret;
 
+  #debug: HTMLDivElement;
+
   #wrapper: HTMLDivElement;
 
   state: SelectionState;
@@ -31,6 +33,7 @@ class Selection extends HTMLElement {
   constructor(editor: EditorElement) {
     super();
     this.#grid = [];
+    this.#debug = document.createElement('div');
     this.editor = editor;
     this.#textArea = document.createElement('textarea');
     this.#textArea.addEventListener('input', (e: any) => {
@@ -42,14 +45,48 @@ class Selection extends HTMLElement {
           const splitText = nodeKey?.text?.split('');
           console.log('splitText', nodeKey);
           if (nodeKey && this.state.location) {
-            const text = [...(splitText?.slice(0, this.state.anchorOffset || 0) || []), e.data, ...(splitText?.slice(this.state.anchorOffset || 0, splitText.length) || [])].join('');
-            console.log('test', [...(splitText?.slice(0, this.state.anchorOffset || 0) || []), e.data, ...(splitText?.slice(this.state.anchorOffset || 0, splitText.length) || [])].join(''));
+            const text = e.data;
             this.state.location.text = text;
+            nodeKey.text = e.data;
+            // const text = [...(splitText?.slice(0, this.state.anchorOffset || 0) || []), e.data, ...(splitText?.slice(this.state.anchorOffset || 0, splitText.length) || [])].join('');
+            // console.log('test', [...(splitText?.slice(0, this.state.anchorOffset || 0) || []), e.data, ...(splitText?.slice(this.state.anchorOffset || 0, splitText.length) || [])].join(''));
+            // this.state.location.text = text;
             nodeKey.text = [...(splitText?.slice(0, this.state.anchorOffset || 0) || []), e.data, ...(splitText?.slice(this.state.anchorOffset || 0, splitText.length) || [])].join('');
-            console.log(this.editor.weakMap);
+            // console.log(this.editor.weakMap);
           }
           this.editor.render();
-          this.modify('move', 'backward', 'character');
+          // this.setState({
+          //   ...this.state,
+          //   anchorOffset: grid[anchorIdx].offset,
+          //   anchorNode: grid[anchorIdx].node,
+          //   anchorIndex: anchorIdx,
+          //   focusOffset: grid[focusIdx].offset,
+          //   focusNode: grid[focusIdx].node,
+          //   focusIndex: focusIdx,
+          //   location: grid[focusIdx],
+          //   isCollased: alter !== 'move',
+          //   type: alter === 'move' ? 'Caret' : 'Range',
+          // });
+
+          this.state = {
+            ...this.state,
+            anchorOffset: (this.state.anchorOffset || 0) + 1,
+            focusOffset: (this.state.focusOffset || 0) + 1,
+          };
+          if (this.state.location) {
+            const { grid } = this;
+            this.state.location = {
+              ...this.state.location,
+              ...grid[(this.state.focusIndex || 0) + 1],
+            };
+          }
+          this.render();
+          // this.render;
+          // window.requestAnimationFrame(() => {
+          //   this.modify('move', 'backward', 'word');
+          // });
+          // window.getAn
+          // this.modify('move', 'backward', 'character');
           // console.log('input', e, this.state.anchorNode);
           // const split = (this.state.anchorNode.firstChild as Text).splitText(this.state.anchorOffset || 0);
           // split.before(e.data || '');
@@ -129,6 +166,8 @@ class Selection extends HTMLElement {
     this.editor.focus();
     window.requestAnimationFrame(() => {
       if (this.state.anchorNode) {
+        this.editor.wrapper.after(this.#debug);
+        this.#debug.innerText = JSON.stringify(this.state, null, 2);
         // const nodeKey = this.editor.weakMap.get(this.state.anchorNode);
         // this.#textArea.value = nodeKey?.text || '';
         // this.#textArea.selectionStart = this.state.anchorOffset || 0;
@@ -222,6 +261,9 @@ class Selection extends HTMLElement {
   }
 
   connectedCallback(): void {
+    window.addEventListener('resize', () => {
+      Grid.create(this.editor);
+    });
     this.style.position = 'absolute';
     this.style.inset = '0';
     this.style.width = '100%';

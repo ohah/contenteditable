@@ -107,7 +107,7 @@ const Grid = {
         }
       }
       grid.forEach(column => {
-        Cell.testBlock(editor, column);
+        // Cell.testBlock(editor, column);
       });
       editor.Selection.grid = grid;
       // editor.addObserver((e: any) => {
