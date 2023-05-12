@@ -73,6 +73,7 @@ class Selection extends HTMLElement {
             anchorOffset: (this.state.anchorOffset || 0) + 1,
             focusOffset: (this.state.focusOffset || 0) + 1,
           };
+          // 커서이동작업중
           if (this.state.location) {
             const { grid } = this;
             this.state.location = {
