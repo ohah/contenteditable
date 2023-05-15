@@ -32,9 +32,10 @@ export type GridLocation = Location;
 
 const Grid = {
   create: (editor: EditorElement) => {
-    const { weakMap } = editor;
+    const { weakMap, FiberNodeMap } = editor;
     const grid: GridLocation[] = [];
     window.requestAnimationFrame(() => {
+      console.log('실행', FiberNodeMap);
       const editorRect = editor.getBoundingClientRect();
       const walker = document.createTreeWalker(editor.view, NodeFilter.SHOW_ELEMENT, {
         acceptNode: function (node) {
@@ -99,7 +100,7 @@ const Grid = {
               left: left - editorRect.left,
               width: editor.offsetWidth - left,
               height,
-              right: editor.offsetWidth - left,
+              right: left - editorRect.left + editor.offsetWidth - left,
               bottom: bottom - editorRect.top,
               node: walker.currentNode,
             });

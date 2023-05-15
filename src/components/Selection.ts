@@ -8,7 +8,6 @@ import { initialSelectState, SelectionState, State } from 'core/State';
 import { Caret, Range } from 'components';
 import { define } from 'components/default';
 import EditorElement from 'components/Editor';
-import { json2EditorNode } from 'utils';
 
 @define('editor-selection')
 class Selection extends HTMLElement {
@@ -36,65 +35,24 @@ class Selection extends HTMLElement {
     this.#debug = document.createElement('div');
     this.editor = editor;
     this.#textArea = document.createElement('textarea');
-    this.#textArea.addEventListener('input', (e: any) => {
+    this.#textArea.addEventListener('beforeinput', (e: any) => {
       const event = e as InputEvent;
+      event.preventDefault();
       const { inputType } = event;
       if (inputType === 'insertText') {
         if (this.state.anchorNode) {
           const nodeKey = this.editor.weakMap.get(this.state.anchorNode);
           const splitText = nodeKey?.text?.split('');
-          console.log('splitText', nodeKey);
-          if (nodeKey && this.state.location) {
+          if (nodeKey && this.state.location && this.state.location.text) {
             const text = e.data;
             this.state.location.text = text;
             nodeKey.text = e.data;
-            // const text = [...(splitText?.slice(0, this.state.anchorOffset || 0) || []), e.data, ...(splitText?.slice(this.state.anchorOffset || 0, splitText.length) || [])].join('');
-            // console.log('test', [...(splitText?.slice(0, this.state.anchorOffset || 0) || []), e.data, ...(splitText?.slice(this.state.anchorOffset || 0, splitText.length) || [])].join(''));
-            // this.state.location.text = text;
             nodeKey.text = [...(splitText?.slice(0, this.state.anchorOffset || 0) || []), e.data, ...(splitText?.slice(this.state.anchorOffset || 0, splitText.length) || [])].join('');
-            // console.log(this.editor.weakMap);
           }
           this.editor.render();
-          // this.setState({
-          //   ...this.state,
-          //   anchorOffset: grid[anchorIdx].offset,
-          //   anchorNode: grid[anchorIdx].node,
-          //   anchorIndex: anchorIdx,
-          //   focusOffset: grid[focusIdx].offset,
-          //   focusNode: grid[focusIdx].node,
-          //   focusIndex: focusIdx,
-          //   location: grid[focusIdx],
-          //   isCollased: alter !== 'move',
-          //   type: alter === 'move' ? 'Caret' : 'Range',
-          // });
-
-          this.state = {
-            ...this.state,
-            anchorOffset: (this.state.anchorOffset || 0) + 1,
-            focusOffset: (this.state.focusOffset || 0) + 1,
-          };
-          // 커서이동작업중
-          if (this.state.location) {
-            const { grid } = this;
-            this.state.location = {
-              ...this.state.location,
-              ...grid[(this.state.focusIndex || 0) + 1],
-            };
-          }
-          this.render();
-          // this.render;
-          // window.requestAnimationFrame(() => {
-          //   this.modify('move', 'backward', 'word');
-          // });
-          // window.getAn
-          // this.modify('move', 'backward', 'character');
-          // console.log('input', e, this.state.anchorNode);
-          // const split = (this.state.anchorNode.firstChild as Text).splitText(this.state.anchorOffset || 0);
-          // split.before(e.data || '');
-          // console.log(this.state.anchorNode.firstChild, split.textContent);
-          // this.state.anchorNode.normalize();
-          // if (nodeKey) nodeKey.text = this.#textArea.value;
-          // this.state.anchorNode.textContent = this.#textArea.value;
+          window.requestIdleCallback(() => {
+            this.modify('move', 'backward', 'character');
+          });
         }
       }
     });
@@ -116,17 +74,15 @@ class Selection extends HTMLElement {
 
     this.appendChild(this.#wrapper);
     this.appendChild(this.#textArea);
-    // const [state, setState] = useState(initialSelectState);
-    // setState({
-    //   ...state,
-    // });
-    // this.State = state;
+
     this.#caret = new Caret();
     this.#range = new Range();
+
     this.editor.addEventListener('mousedown', e => {
       console.log('mousedown');
       this.mousedown(e, editor);
     });
+
     this.editor.wrapper.addEventListener('keydown', e => {
       if (e.key === 'ArrowRight') {
         this.modify('move', 'backward', 'character');
@@ -134,9 +90,6 @@ class Selection extends HTMLElement {
       if (e.key === 'ArrowLeft') {
         this.modify('move', 'forward', 'character');
       }
-      // if (this.state.location?.key) {
-      //   console.log('this.editor', this.editor);
-      // }
     });
   }
 
@@ -156,11 +109,12 @@ class Selection extends HTMLElement {
   render() {
     if (this.state.type === 'Caret') {
       // this.removeChild(this.#range);
-      this.#wrapper.appendChild(this.#caret);
+      console.log('location', this.state.location?.width);
       this.#caret.setAttribute('top', `${this.state.location?.top}px`);
       this.#caret.setAttribute('left', `${this.state.location?.left}px`);
-      this.#caret.setAttribute('width', `${this.state.location!.width >= 1 ? this.state.location?.width : '5'}px`);
+      this.#caret.setAttribute('width', `${this.state.location?.text ? this.state.location?.width : '5'}px`);
       this.#caret.setAttribute('height', `${this.state.location?.height}px`);
+      this.#wrapper.appendChild(this.#caret);
     } else {
       // this.removeChild(this.#caret)
     }
@@ -169,6 +123,8 @@ class Selection extends HTMLElement {
       if (this.state.anchorNode) {
         this.editor.wrapper.after(this.#debug);
         this.#debug.innerText = JSON.stringify(this.state, null, 2);
+        // this.editor.render();
+        // Grid.create(this.editor);
         // const nodeKey = this.editor.weakMap.get(this.state.anchorNode);
         // this.#textArea.value = nodeKey?.text || '';
         // this.#textArea.selectionStart = this.state.anchorOffset || 0;

@@ -9,6 +9,11 @@ class Caret extends HTMLElement {
 
   constructor() {
     super();
+    this.style.width = '1px';
+    this.style.position = 'absolute';
+    this.style.backgroundColor = 'rgba(255,0,0,0.75)';
+    this.style.borderColor = '#000000';
+    this.style.userSelect = 'none';
   }
 
   static get observedAttributes() {
@@ -16,15 +21,11 @@ class Caret extends HTMLElement {
   }
 
   connectedCallback(): void {
-    this.style.width = '5px';
-    // this.style.height = `21px`;
-    this.style.position = 'absolute';
-    this.style.backgroundColor = 'rgba(255,0,0,0.75)';
-    this.style.borderColor = '#000000';
-    this.style.userSelect = 'none';
-    // this.interval = setInterval(() => {
-    //   this.style.visibility = this.style.visibility === 'hidden' ? 'inherit' : 'hidden';
-    // }, 500);
+    clearInterval(this.interval);
+    this.style.visibility = 'inherit';
+    this.interval = setInterval(() => {
+      this.style.visibility = this.style.visibility === 'hidden' ? 'inherit' : 'hidden';
+    }, 500);
   }
 
   disconnectedCallback(): void {
@@ -41,6 +42,7 @@ class Caret extends HTMLElement {
       this.style.height = newValue;
     }
     if (name === 'width') {
+      console.log('newValue.width', newValue);
       this.style.width = newValue;
     }
     if (name === 'top') {

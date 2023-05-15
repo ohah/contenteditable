@@ -33,6 +33,7 @@ interface Options {
 }
 
 export type FiberNodeWeakMap = WeakMap<ViewNode, EditorFiberNode>;
+export type FiberNodeMap = Map<string, ViewNode>;
 
 @define('web-editor')
 class EditorElement extends HTMLElement {
@@ -40,6 +41,8 @@ class EditorElement extends HTMLElement {
    * 해당 엘리먼트에 포커스가 가면 json 데이터를 불러온다.
    */
   #FiberNodeWeakMap: FiberNodeWeakMap;
+
+  #FiberNodeMap: FiberNodeMap;
 
   #Selection: Selection;
 
@@ -63,6 +66,7 @@ class EditorElement extends HTMLElement {
   constructor(options?: Partial<Options>) {
     super();
     this.#FiberNodeWeakMap = new WeakMap();
+    this.#FiberNodeMap = new Map();
     // this.setAttribute('tabIndex', '-1');
     this.wrapper = document.createElement('div');
     this.wrapper.setAttribute('tabIndex', '-1');
@@ -120,9 +124,9 @@ class EditorElement extends HTMLElement {
     // }, 1000);
   }
 
-  render() {
+  async render() {
     this.#view?.remove();
-    const { fragment, node } = json2EditorNode(this.FiberData, this.#FiberNodeWeakMap);
+    const { fragment, node } = json2EditorNode(this.FiberData, this.#FiberNodeWeakMap, this.#FiberNodeMap);
     this.wrapper.appendChild(fragment);
     this.#view = node;
     Grid.create(this);
@@ -146,6 +150,10 @@ class EditorElement extends HTMLElement {
 
   get weakMap() {
     return this.#FiberNodeWeakMap;
+  }
+
+  get FiberNodeMap() {
+    return this.#FiberNodeMap;
   }
 
   set view(view: HTMLDivElement) {

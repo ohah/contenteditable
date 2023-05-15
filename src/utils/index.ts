@@ -1,4 +1,6 @@
 /* eslint-disable no-param-reassign */
+import { ViewNode } from 'core/Grid';
+
 import { EditorFiberNode, EditorNode, FiberNodeWeakMap } from 'components/Editor';
 
 /* eslint-disable no-bitwise */
@@ -25,7 +27,7 @@ export const json2EditorFiberNode = (EditorNode: EditorNode[]) => {
   return node;
 };
 
-export const json2EditorNode = (EditorNode: EditorFiberNode[], FiberNodeWeakMap: any) => {
+export const json2EditorNode = (EditorNode: EditorFiberNode[], FiberNodeWeakMap: WeakMap<any, any>, FibderNodeMap: Map<string, ViewNode>) => {
   const fragment = document.createDocumentFragment();
   const div = document.createElement('div');
   div.classList.add('editor');
@@ -39,15 +41,22 @@ export const json2EditorNode = (EditorNode: EditorFiberNode[], FiberNodeWeakMap:
         });
     }
     if (node.type === 'text') {
-      const span = document.createElement('span');
-      const textNode = document.createTextNode(node.text || '');
+      const span = FibderNodeMap.get(node.key) || document.createElement('span');
+      const textNode = (FibderNodeMap.get(node.key)?.firstChild as Text) || document.createTextNode('');
+      textNode.textContent = node.text || '';
       span.appendChild(textNode);
-      FiberNodeWeakMap.set(span, node);
+      if (!FibderNodeMap.has(node.key)) {
+        FiberNodeWeakMap.set(span, node);
+        FibderNodeMap.set(node.key, span);
+      }
       return span;
     }
     if (node.type === 'linebreak') {
-      const br = document.createElement('br');
-      FiberNodeWeakMap.set(br, node);
+      const br = FibderNodeMap.get(node.key) || document.createElement('br');
+      if (!FibderNodeMap.has(node.key)) {
+        FiberNodeWeakMap.set(br, node);
+        FibderNodeMap.set(node.key, br);
+      }
       return br;
     }
     // FiberNodeWeakMap.set(element, EditorFiberNode[EditorFiberNode.length - 1]);
