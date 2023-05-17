@@ -51,10 +51,14 @@ class Selection extends HTMLElement {
           }
           this.editor.render();
           window.requestIdleCallback(() => {
-            this.modify('move', 'backward', 'character');
+            this.modify('move', 'right', 'character');
           });
         }
       }
+    });
+    window.addEventListener('resize', () => {
+      Grid.create(this.editor);
+      this.render();
     });
     // this.#textArea.style.width = '0px';
     // this.#textArea.style.height = '0px';
@@ -64,6 +68,7 @@ class Selection extends HTMLElement {
     // this.#textArea.style.whiteSpace = 'nowrap';
     // this.#textArea.style.width = '1em';
     this.#textArea.style.overflow = 'auto';
+    this.#textArea.style.position = 'fixed';
     // this.#textArea.style.resize = 'vertical';
 
     this.state = initialSelectState;
@@ -79,16 +84,21 @@ class Selection extends HTMLElement {
     this.#range = new Range();
 
     this.editor.addEventListener('mousedown', e => {
-      console.log('mousedown');
       this.mousedown(e, editor);
     });
 
     this.editor.wrapper.addEventListener('keydown', e => {
       if (e.key === 'ArrowRight') {
-        this.modify('move', 'backward', 'character');
+        this.modify('move', 'right', 'character');
+      }
+      if (e.key === 'ArrowUp') {
+        this.modify('move', 'up', 'character');
+      }
+      if (e.key === 'ArrowDown') {
+        this.modify('move', 'down', 'character');
       }
       if (e.key === 'ArrowLeft') {
-        this.modify('move', 'forward', 'character');
+        this.modify('move', 'left', 'character');
       }
     });
   }
@@ -109,7 +119,6 @@ class Selection extends HTMLElement {
   render() {
     if (this.state.type === 'Caret') {
       // this.removeChild(this.#range);
-      console.log('location', this.state.location?.width);
       this.#caret.setAttribute('top', `${this.state.location?.top}px`);
       this.#caret.setAttribute('left', `${this.state.location?.left}px`);
       this.#caret.setAttribute('width', `${this.state.location?.text ? this.state.location?.width : '5'}px`);
@@ -131,17 +140,19 @@ class Selection extends HTMLElement {
         // this.#textArea.selectionEnd = this.state.anchorOffset || 0;
       }
       this.#textArea.focus();
+      Grid.create(this.editor);
     });
   }
 
-  modify(alter: 'move' | 'extend', direction: 'forward' | 'backward', granularity: 'character' | 'word' | 'sentence' | 'line' | 'paragraph') {
+  modify(alter: 'move' | 'extend', direction: 'left' | 'right' | 'up' | 'down', granularity: 'character' | 'word' | 'sentence' | 'line' | 'paragraph') {
     if (typeof this.state.focusIndex !== 'number') return;
-    const { grid } = this;
-    if (typeof this.state.focusIndex === 'number' && typeof this.state.anchorIndex === 'number') {
-      let focusIdx = this.state.focusIndex;
-      let anchorIdx = this.state.anchorIndex;
+    const { grid, state } = this;
+    if (typeof state.focusIndex === 'number' && typeof state.anchorIndex === 'number') {
+      let focusIdx = state.focusIndex;
+      let anchorIdx = state.anchorIndex;
       let moveIdx = 1;
-      if (direction === 'forward') {
+
+      if (direction === 'left') {
         moveIdx *= -1;
       }
 
@@ -151,13 +162,23 @@ class Selection extends HTMLElement {
       }
 
       if (alter === 'move') {
-        focusIdx += moveIdx;
-        anchorIdx += moveIdx;
+        if (['left', 'right'].includes(direction)) {
+          focusIdx += moveIdx;
+          anchorIdx += moveIdx;
+        }
+        if (['up', 'down'].includes(direction)) {
+          const line = grid.filter(row => row.line === (direction === 'up' ? -1 : 1) + (state?.location?.line || 0));
+          const lineText = line.map(row => row.text).join('');
+          console.log('lineText', lineText);
+          console.log('line', line);
+        }
       }
 
       if (alter === 'extend') {
-        focusIdx += moveIdx;
-        anchorIdx = moveIdx;
+        if (['left', 'right'].includes(direction)) {
+          focusIdx += moveIdx;
+          anchorIdx = moveIdx;
+        }
       }
 
       this.setState({
@@ -218,9 +239,6 @@ class Selection extends HTMLElement {
   }
 
   connectedCallback(): void {
-    window.addEventListener('resize', () => {
-      Grid.create(this.editor);
-    });
     this.style.position = 'absolute';
     this.style.inset = '0';
     this.style.width = '100%';

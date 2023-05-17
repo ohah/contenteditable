@@ -23,6 +23,7 @@ export interface Location {
   node: ViewNode;
   text?: string;
   offset?: number;
+  line: number;
 }
 
 export type GridLocation = Location;
@@ -35,7 +36,6 @@ const Grid = {
     const { weakMap, FiberNodeMap } = editor;
     const grid: GridLocation[] = [];
     window.requestAnimationFrame(() => {
-      console.log('실행', FiberNodeMap);
       const editorRect = editor.getBoundingClientRect();
       const walker = document.createTreeWalker(editor.view, NodeFilter.SHOW_ELEMENT, {
         acceptNode: function (node) {
@@ -43,8 +43,10 @@ const Grid = {
         },
       });
       // const order = 0;
+      let line = 0;
       while (walker.nextNode()) {
         const node = walker.currentNode as Element;
+        let nowTop = 0;
         if (['span', 'br'].includes(node.nodeName.toLowerCase())) {
           const range = new Range();
           if (node.firstChild) {
@@ -53,10 +55,17 @@ const Grid = {
               range.setStart(node.firstChild, i);
               range.setEnd(node.firstChild, i + 1);
               const { x, y, top, left, width, height, right, bottom } = range.getBoundingClientRect();
+              // console.log(range.getClientRects().length);
               const key = weakMap.get(node)?.key;
+              if (top !== nowTop) {
+                // console.log(range.toString());
+                line += 1;
+              }
+              nowTop = top;
               if (key) {
                 grid.push({
                   key,
+                  line,
                   x: x - editorRect.x,
                   y: y - editorRect.y,
                   top: top - editorRect.top,
@@ -73,6 +82,7 @@ const Grid = {
                   if (!node.nextElementSibling) {
                     grid.push({
                       key,
+                      line,
                       x: x - editorRect.x,
                       y: y - editorRect.y,
                       top: top - editorRect.top,
@@ -94,6 +104,7 @@ const Grid = {
             // 해당코드 작업해야함
             grid.push({
               key: weakMap.get(node)?.key || '',
+              line,
               x: x - editorRect.x,
               y: y - editorRect.y,
               top: top - editorRect.top,
@@ -111,6 +122,7 @@ const Grid = {
         // Cell.testBlock(editor, column);
       });
       editor.Selection.grid = grid;
+      console.log('grid', grid);
       // editor.addObserver((e: any) => {
       //   console.log('observer', e);
       // });

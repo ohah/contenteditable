@@ -1,3 +1,4 @@
+/* eslint-disable no-restricted-syntax */
 /* eslint-disable new-cap */
 /* eslint-disable prefer-rest-params */
 /* eslint-disable no-constructor-return */
@@ -109,19 +110,17 @@ class EditorElement extends HTMLElement {
       this.#view.classList.add('editor');
       this.wrapper.appendChild(this.#view);
     }
-    // shadow.appendChild(this.#textArea);
     this.render();
-    // document.addEventListener('selectionchange', e => {
-    //   console.log('selectin', (shadow as never as Document).getSelection());
+    // const MutaionObserver = new MutationObserver((mutationList, observer) => {
+    //   for (const mutation of mutationList) {
+    //     if (mutation.type === 'childList') {
+    //       console.log('자식 노드가 추가되거나 제거됐습니다.');
+    //     } else if (mutation.type === 'attributes') {
+    //       console.log(`${mutation.attributeName} 특성이 변경됐습니다.`);
+    //     }
+    //   }
     // });
-    // this.#view.contentEditable = 'true';
-    // this.addEventListener('keydown', e => console.log('e', e.key));
-    // this.#Caret.setAttribute('height', '21px');
-    // console.log('textarea', this.#textArea.getBoundingClientRect());
-    // console.log(this.#FiberNodeWeakMap);
-    // setTimeout(() => {
-    //   this.setAttribute('test', 'test');
-    // }, 1000);
+    // MutaionObserver.observe(this, { attributes: true, childList: true, subtree: true });
   }
 
   async render() {

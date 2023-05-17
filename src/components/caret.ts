@@ -42,7 +42,6 @@ class Caret extends HTMLElement {
       this.style.height = newValue;
     }
     if (name === 'width') {
-      console.log('newValue.width', newValue);
       this.style.width = newValue;
     }
     if (name === 'top') {
