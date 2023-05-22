@@ -24,6 +24,11 @@ const editor = new EditorElement({
           type: 'text',
           text: '개행',
         },
+        { type: 'linebreak' },
+        {
+          type: 'text',
+          text: '개행2',
+        },
       ],
     },
     {
@@ -99,7 +104,7 @@ const editor = new EditorElement({
     },
   ],
 });
-console.log('editor', editor);
+// console.log('editor', editor);
 // editor.cloneNode(true);
 editor.classList.add('content-ediable');
 document.body.appendChild(editor);

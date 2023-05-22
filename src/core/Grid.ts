@@ -33,21 +33,45 @@ export type GridLocation = Location;
 
 const Grid = {
   create: (editor: EditorElement) => {
-    const { weakMap, FiberNodeMap } = editor;
+    const { weakMap } = editor;
     const grid: GridLocation[] = [];
     window.requestAnimationFrame(() => {
       const editorRect = editor.getBoundingClientRect();
+      const lineRange = new Range();
+      console.log('total', editor.view);
       const walker = document.createTreeWalker(editor.view, NodeFilter.SHOW_ELEMENT, {
-        acceptNode: function (node) {
+        acceptNode: function () {
           return NodeFilter.FILTER_ACCEPT;
         },
       });
-      // const order = 0;
-      let line = 0;
+      let line = 1;
+      const tagNames: string[] = [];
       while (walker.nextNode()) {
         const node = walker.currentNode as Element;
-        let nowTop = 0;
-        if (['span', 'br'].includes(node.nodeName.toLowerCase())) {
+        const tagName = node.nodeName.toLowerCase();
+        tagNames.push(tagName);
+        if (!['span', 'br'].includes(tagName)) {
+          // console.log('??', 'line+', node);
+          // span, br 태그를 제외한 모든 태그는 개행이 된다
+          line += 1;
+        }
+        if (node?.nodeName.toLowerCase() === 'br') {
+          // br이 연속으로 있을 때는 개행이 된다.
+          line += 1;
+        }
+        if (['span', 'br'].includes(tagName)) {
+          if (node.firstChild) {
+            // span 태그 안의 텍스트 크기를 구하려고 nodecontents함수 사용
+            lineRange.selectNodeContents(node);
+          } else {
+            // br 태그 선택
+            lineRange.selectNode(node);
+          }
+          const topRects = Array.from(lineRange.getClientRects()).map(rect => rect.top);
+          if (topRects.length > 1) {
+            // wordrap현상으로(글이 길어서 라인이 바뀔때 개행을 구해준다.
+            line += topRects.length - 1;
+          }
           const range = new Range();
           if (node.firstChild) {
             const length = node.firstChild.textContent?.length || 0;
@@ -55,17 +79,11 @@ const Grid = {
               range.setStart(node.firstChild, i);
               range.setEnd(node.firstChild, i + 1);
               const { x, y, top, left, width, height, right, bottom } = range.getBoundingClientRect();
-              // console.log(range.getClientRects().length);
               const key = weakMap.get(node)?.key;
-              if (top !== nowTop) {
-                // console.log(range.toString());
-                line += 1;
-              }
-              nowTop = top;
               if (key) {
                 grid.push({
                   key,
-                  line,
+                  line: line - (topRects.length - topRects.findIndex(item => item === top)),
                   x: x - editorRect.x,
                   y: y - editorRect.y,
                   top: top - editorRect.top,
@@ -82,7 +100,7 @@ const Grid = {
                   if (!node.nextElementSibling) {
                     grid.push({
                       key,
-                      line,
+                      line: line - (topRects.length - topRects.findIndex(item => item === top)),
                       x: x - editorRect.x,
                       y: y - editorRect.y,
                       top: top - editorRect.top,
@@ -98,9 +116,9 @@ const Grid = {
               }
             }
           } else {
-            range.setStart(node, 0);
-            range.setEnd(node, 0);
-            const { x, y, top, left, width, height, right, bottom } = node.getBoundingClientRect();
+            //br tag
+            range.selectNode(node);
+            const { x, y, top, left, height, bottom } = node.getBoundingClientRect();
             // 해당코드 작업해야함
             grid.push({
               key: weakMap.get(node)?.key || '',
@@ -118,7 +136,8 @@ const Grid = {
           }
         }
       }
-      grid.forEach(column => {
+      // console.table(tagNames);
+      grid.forEach(() => {
         // Cell.testBlock(editor, column);
       });
       editor.Selection.grid = grid;

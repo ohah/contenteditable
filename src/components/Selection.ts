@@ -167,10 +167,25 @@ class Selection extends HTMLElement {
           anchorIdx += moveIdx;
         }
         if (['up', 'down'].includes(direction)) {
-          const line = grid.filter(row => row.line === (direction === 'up' ? -1 : 1) + (state?.location?.line || 0));
-          const lineText = line.map(row => row.text).join('');
-          console.log('lineText', lineText);
-          console.log('line', line);
+          moveIdx = direction === 'up' ? -1 : 1;
+          const line = grid.filter(cell => cell.line === moveIdx + (state?.location?.line || 0));
+          const lineText = line.map(cell => cell.text).join('');
+          const left = state.location?.left;
+          if (state.location) {
+            const { x, y } = state.location;
+            console.log('line', line);
+            const lineCell = line.find(cell => cell.left < x && cell.right > x);
+            console.log('lineCell', lineCell);
+            if (lineCell) {
+              const Idx = grid.findIndex(cell => Object.isEquals(cell, lineCell));
+              console.log('Idx', Idx);
+              anchorIdx = Idx;
+              focusIdx = Idx;
+            }
+          }
+          // line.find(cell=>cell.left )
+          // // console.log('lineText', lineText);
+          // console.log('line', line);
         }
       }
 

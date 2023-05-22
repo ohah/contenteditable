@@ -1,3 +1,8 @@
+/* eslint-disable no-extend-native */
+/* eslint-disable @typescript-eslint/ban-types */
+/* eslint-disable no-continue */
+/* eslint-disable no-prototype-builtins */
+/* eslint-disable no-restricted-syntax */
 /* eslint-disable no-param-reassign */
 import { ViewNode } from 'core/Grid';
 
@@ -41,9 +46,12 @@ export const json2EditorNode = (EditorNode: EditorFiberNode[], FiberNodeWeakMap:
         });
     }
     if (node.type === 'text') {
-      const span = FibderNodeMap.get(node.key) || document.createElement('span');
+      const span = (FibderNodeMap.get(node.key) as HTMLSpanElement) || (document.createElement('span') as HTMLSpanElement);
       const textNode = (FibderNodeMap.get(node.key)?.firstChild as Text) || document.createTextNode('');
       textNode.textContent = node.text || '';
+      if (node.format?.includes('bold')) {
+        span.style.fontSize = '24px';
+      }
       span.appendChild(textNode);
       if (!FibderNodeMap.has(node.key)) {
         FiberNodeWeakMap.set(span, node);
@@ -72,4 +80,13 @@ export const json2EditorNode = (EditorNode: EditorFiberNode[], FiberNodeWeakMap:
     fragment,
     node: div,
   };
+};
+
+Object.prototype.isEquals = (obj1, obj2) => {
+  for (const key in obj1) {
+    if (!obj1.hasOwnProperty(key)) continue;
+    if (!obj2.hasOwnProperty(key)) return false;
+    if (obj1[key] !== obj2[key]) return false;
+  }
+  return true;
 };
