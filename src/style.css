@@ -99,8 +99,8 @@ button:focus-visible {
   position: relative;
   outline: none;
   white-space: pre-wrap;
-  word-break: break-word;
+  word-break: break-all;
   user-select: none;
   cursor: text;
-  overflow-wrap: break-word;
+  overflow-wrap:break-word;
 }

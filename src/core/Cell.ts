@@ -69,6 +69,7 @@ const Cell = {
   },
   testBlock: (editor: EditorElement, column: Location) => {
     const div = document.createElement('div');
+    div.dataset.caretArea = 'true';
     div.style.position = 'absolute';
     div.style.zIndex = '-1';
     div.style.top = `${column.top}px`;

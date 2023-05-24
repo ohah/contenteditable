@@ -24,6 +24,10 @@ export interface SelectionState {
   focusIndex?: number | null;
   isCollased?: boolean | null;
   location?: Location | null;
+  /**
+   * 위 아래 커서 이동시 최초 포지션 정보 남김
+   */
+  position?: Location | null;
   type: 'Caret' | 'Range' | 'None';
 }
 

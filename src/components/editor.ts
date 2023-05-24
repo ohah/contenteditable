@@ -94,7 +94,7 @@ class EditorElement extends HTMLElement {
       html{
         outline: none;
         white-space: pre-wrap;
-        word-break: break-word;
+        word-break: break-all;
         user-select: none;
         cursor: text;
         overflow-wrap: break-word;

@@ -35,6 +35,7 @@ const Grid = {
   create: (editor: EditorElement) => {
     const { weakMap } = editor;
     const grid: GridLocation[] = [];
+    let brTop: number | null = null;
     window.requestAnimationFrame(() => {
       const editorRect = editor.getBoundingClientRect();
       const lineRange = new Range();
@@ -55,10 +56,10 @@ const Grid = {
           // span, br 태그를 제외한 모든 태그는 개행이 된다
           line += 1;
         }
-        if (node?.nodeName.toLowerCase() === 'br') {
-          // br이 연속으로 있을 때는 개행이 된다.
-          line += 1;
-        }
+        // if (node?.nodeName.toLowerCase() === 'br') {
+        //   // br이 연속으로 있을 때는 개행이 된다.
+        //   line += 1;
+        // }
         if (['span', 'br'].includes(tagName)) {
           if (node.firstChild) {
             // span 태그 안의 텍스트 크기를 구하려고 nodecontents함수 사용
@@ -68,6 +69,7 @@ const Grid = {
             lineRange.selectNode(node);
           }
           const topRects = Array.from(lineRange.getClientRects()).map(rect => rect.top);
+
           if (topRects.length > 1) {
             // wordrap현상으로(글이 길어서 라인이 바뀔때 개행을 구해준다.
             line += topRects.length - 1;
@@ -79,6 +81,11 @@ const Grid = {
               range.setStart(node.firstChild, i);
               range.setEnd(node.firstChild, i + 1);
               const { x, y, top, left, width, height, right, bottom } = range.getBoundingClientRect();
+              // 앞에 br 태그가 있으면 이전 br값과 현재 node의 top 값을 비교하여 라인을 계산한다
+              if (typeof brTop === 'number' && top > brTop) {
+                line += 1;
+                brTop = null;
+              }
               const key = weakMap.get(node)?.key;
               if (key) {
                 grid.push({
@@ -119,10 +126,15 @@ const Grid = {
             //br tag
             range.selectNode(node);
             const { x, y, top, left, height, bottom } = node.getBoundingClientRect();
+            // 앞에 br 태그가 있으면 이전 br값과 현재 node의 top 값을 비교하여 라인을 계산한다
+            if (typeof brTop === 'number' && top > brTop) {
+              line += 1;
+              brTop = null;
+            }
             // 해당코드 작업해야함
             grid.push({
               key: weakMap.get(node)?.key || '',
-              line,
+              line: line - (topRects.length - topRects.findIndex(item => item === top)),
               x: x - editorRect.x,
               y: y - editorRect.y,
               top: top - editorRect.top,
@@ -135,13 +147,19 @@ const Grid = {
             });
           }
         }
+        if (tagName === 'br') {
+          brTop = lineRange.getBoundingClientRect().top;
+        }
       }
       // console.table(tagNames);
-      grid.forEach(() => {
-        // Cell.testBlock(editor, column);
+      editor.shadowRoot?.querySelectorAll('[data-caret-area]').forEach(ele => {
+        ele.remove();
+      });
+      grid.forEach(column => {
+        Cell.testBlock(editor, column);
       });
       editor.Selection.grid = grid;
-      console.log('grid', grid);
+      // console.log('grid', grid);
       // editor.addObserver((e: any) => {
       //   console.log('observer', e);
       // });

@@ -23,6 +23,8 @@ class Selection extends HTMLElement {
 
   #wrapper: HTMLDivElement;
 
+  #imeElement: HTMLSpanElement;
+
   state: SelectionState;
 
   #range: Range;
@@ -32,13 +34,42 @@ class Selection extends HTMLElement {
   constructor(editor: EditorElement) {
     super();
     this.#grid = [];
+    this.#imeElement = document.createElement('span');
     this.#debug = document.createElement('div');
     this.editor = editor;
     this.#textArea = document.createElement('textarea');
+    this.#textArea.addEventListener('compositionstart', e => {
+      console.log('compositionstart', e);
+    });
+    this.#textArea.addEventListener('compositionupdate', e => {
+      console.log('compositionupdate', e);
+      this.#imeElement.textContent = e.data;
+    });
+    this.#textArea.addEventListener('compositionend', e => {
+      console.log('compositionend', e);
+      if (this.state.anchorNode) {
+        const nodeKey = this.editor.weakMap.get(this.state.anchorNode);
+        const splitText = nodeKey?.text?.split('');
+        if (nodeKey && this.state.location && this.state.location.text) {
+          // const text = this.#imeElement.textContent?.trimEnd() || '';
+          const text = this.#imeElement.textContent?.trimEnd() || '';
+          console.log('text', text.trimEnd());
+          this.state.location.text = text;
+          nodeKey.text = [...(splitText?.slice(0, this.state.anchorOffset || 0) || []), text, ...(splitText?.slice(this.state.anchorOffset || 0, splitText.length) || [])].join('');
+          console.log('nodeKey', nodeKey);
+        }
+        this.#imeElement.textContent = '';
+        this.editor.render();
+        window.requestIdleCallback(() => {
+          this.modify('move', 'right', 'character');
+        });
+      }
+    });
     this.#textArea.addEventListener('beforeinput', (e: any) => {
       const event = e as InputEvent;
       event.preventDefault();
       const { inputType } = event;
+      // console.log('inputType', inputType);
       if (inputType === 'insertText') {
         if (this.state.anchorNode) {
           const nodeKey = this.editor.weakMap.get(this.state.anchorNode);
@@ -46,7 +77,6 @@ class Selection extends HTMLElement {
           if (nodeKey && this.state.location && this.state.location.text) {
             const text = e.data;
             this.state.location.text = text;
-            nodeKey.text = e.data;
             nodeKey.text = [...(splitText?.slice(0, this.state.anchorOffset || 0) || []), e.data, ...(splitText?.slice(this.state.anchorOffset || 0, splitText.length) || [])].join('');
           }
           this.editor.render();
@@ -55,6 +85,9 @@ class Selection extends HTMLElement {
           });
         }
       }
+      // if (inputType === 'insertCompositionText') {
+      //   console.log('e', e);
+      // }
     });
     window.addEventListener('resize', () => {
       Grid.create(this.editor);
@@ -165,27 +198,25 @@ class Selection extends HTMLElement {
         if (['left', 'right'].includes(direction)) {
           focusIdx += moveIdx;
           anchorIdx += moveIdx;
+          if (state?.position) {
+            delete state.position;
+          }
         }
         if (['up', 'down'].includes(direction)) {
-          moveIdx = direction === 'up' ? -1 : 1;
-          const line = grid.filter(cell => cell.line === moveIdx + (state?.location?.line || 0));
-          const lineText = line.map(cell => cell.text).join('');
-          const left = state.location?.left;
           if (state.location) {
-            const { x, y } = state.location;
-            console.log('line', line);
-            const lineCell = line.find(cell => cell.left < x && cell.right > x);
-            console.log('lineCell', lineCell);
+            if (!state?.position) {
+              state.position = state.location;
+            }
+            moveIdx = direction === 'up' ? -1 : 1;
+            const line = grid.filter(cell => cell.line === moveIdx + (state?.location?.line || 0));
+            const { x, y } = state.position;
+            const lineCell = line.findLast(cell => cell.left <= x && cell.right >= x);
             if (lineCell) {
               const Idx = grid.findIndex(cell => Object.isEquals(cell, lineCell));
-              console.log('Idx', Idx);
               anchorIdx = Idx;
               focusIdx = Idx;
             }
           }
-          // line.find(cell=>cell.left )
-          // // console.log('lineText', lineText);
-          // console.log('line', line);
         }
       }
 
@@ -197,7 +228,7 @@ class Selection extends HTMLElement {
       }
 
       this.setState({
-        ...this.state,
+        ...state,
         anchorOffset: grid[anchorIdx].offset,
         anchorNode: grid[anchorIdx].node,
         anchorIndex: anchorIdx,
