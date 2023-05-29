@@ -8,6 +8,7 @@ import { initialSelectState, SelectionState, State } from 'core/State';
 import { Caret, Range } from 'components';
 import { define } from 'components/default';
 import EditorElement from 'components/Editor';
+import { IS_COMPOSING } from 'utils';
 
 @define('editor-selection')
 class Selection extends HTMLElement {
@@ -15,7 +16,7 @@ class Selection extends HTMLElement {
 
   editor: EditorElement;
 
-  #textArea: HTMLTextAreaElement;
+  #contentEditable: HTMLDivElement;
 
   #caret: Caret;
 
@@ -23,7 +24,7 @@ class Selection extends HTMLElement {
 
   #wrapper: HTMLDivElement;
 
-  #imeElement: HTMLSpanElement;
+  #imeElement: HTMLElement;
 
   state: SelectionState;
 
@@ -34,41 +35,64 @@ class Selection extends HTMLElement {
   constructor(editor: EditorElement) {
     super();
     this.#grid = [];
-    this.#imeElement = document.createElement('span');
+    this.#imeElement = document.createElement('u');
     this.#debug = document.createElement('div');
     this.editor = editor;
-    this.#textArea = document.createElement('textarea');
-    this.#textArea.addEventListener('compositionstart', e => {
+    this.#contentEditable = document.createElement('div');
+    this.#contentEditable.contentEditable = 'true';
+    this.#contentEditable.addEventListener('compositionstart', e => {
+      IS_COMPOSING.set(this.editor, true);
       console.log('compositionstart', e);
-    });
-    this.#textArea.addEventListener('compositionupdate', e => {
-      console.log('compositionupdate', e);
-      this.#imeElement.textContent = e.data;
-    });
-    this.#textArea.addEventListener('compositionend', e => {
-      console.log('compositionend', e);
       if (this.state.anchorNode) {
         const nodeKey = this.editor.weakMap.get(this.state.anchorNode);
+        console.log('com', this.state.anchorNode);
+        const textNode = this.state.anchorNode.firstChild as Text;
+        const split = textNode.splitText(this.state.anchorOffset || 0) as Node;
+        console.log('split', split);
+        this.state.anchorNode.insertBefore(this.#imeElement, split);
+      }
+    });
+    // this.#textArea.addEventListener('compositionupdate', e => {});
+    this.#contentEditable.addEventListener('compositionend', async e => {
+      console.log('compositionend', e);
+      IS_COMPOSING.set(this.editor, false);
+      if (this.state.anchorNode) {
+        const nodeKey = this.editor.weakMap.get(this.state.anchorNode);
+        console.log('nodeKey', nodeKey, this.state.anchorNode);
         const splitText = nodeKey?.text?.split('');
         if (nodeKey && this.state.location && this.state.location.text) {
           // const text = this.#imeElement.textContent?.trimEnd() || '';
           const text = this.#imeElement.textContent?.trimEnd() || '';
-          console.log('text', text.trimEnd());
+          // console.log('text', text);
+          this.#imeElement.remove();
+          // console.log('text', text.trimEnd());
           this.state.location.text = text;
           nodeKey.text = [...(splitText?.slice(0, this.state.anchorOffset || 0) || []), text, ...(splitText?.slice(this.state.anchorOffset || 0, splitText.length) || [])].join('');
-          console.log('nodeKey', nodeKey);
+          // console.log('nodeKey', nodeKey);
         }
+        console.log('this.editor.weakMap', this.editor.weakMap);
         this.#imeElement.textContent = '';
-        this.editor.render();
+        this.editor.render2();
         window.requestIdleCallback(() => {
           this.modify('move', 'right', 'character');
         });
       }
     });
-    this.#textArea.addEventListener('beforeinput', (e: any) => {
+    this.#contentEditable.addEventListener('beforeinput', (e: any) => {
       const event = e as InputEvent;
       event.preventDefault();
       const { inputType } = event;
+      if (IS_COMPOSING.get(this.editor)) {
+        this.#imeElement.textContent = e.data;
+        // this.editor.render();
+        window.requestIdleCallback(() => {
+          Grid.create(this.editor);
+          console.log('isComposing', this.#grid);
+        });
+      }
+      // console.log('inputType', inputType, event.data, e.composed, event.isComposing);
+      // if (inputType === 'insertCompositionText') {
+      // }
       // console.log('inputType', inputType);
       if (inputType === 'insertText') {
         if (this.state.anchorNode) {
@@ -90,18 +114,18 @@ class Selection extends HTMLElement {
       // }
     });
     window.addEventListener('resize', () => {
-      Grid.create(this.editor);
+      // Grid.create(this.editor);
       this.render();
     });
     // this.#textArea.style.width = '0px';
     // this.#textArea.style.height = '0px';
-    this.#textArea.style.lineHeight = '1';
+    this.#contentEditable.style.lineHeight = '1';
     // this.#textArea.style.padding = '0px';
     // this.#textArea.style.border = 'none';
     // this.#textArea.style.whiteSpace = 'nowrap';
     // this.#textArea.style.width = '1em';
-    this.#textArea.style.overflow = 'auto';
-    this.#textArea.style.position = 'fixed';
+    this.#contentEditable.style.overflow = 'auto';
+    this.#contentEditable.style.position = 'fixed';
     // this.#textArea.style.resize = 'vertical';
 
     this.state = initialSelectState;
@@ -111,7 +135,7 @@ class Selection extends HTMLElement {
     this.#wrapper.style.height = '100%';
 
     this.appendChild(this.#wrapper);
-    this.appendChild(this.#textArea);
+    this.appendChild(this.#contentEditable);
 
     this.#caret = new Caret();
     this.#range = new Range();
@@ -172,7 +196,7 @@ class Selection extends HTMLElement {
         // this.#textArea.selectionStart = this.state.anchorOffset || 0;
         // this.#textArea.selectionEnd = this.state.anchorOffset || 0;
       }
-      this.#textArea.focus();
+      this.#contentEditable.focus();
       Grid.create(this.editor);
     });
   }

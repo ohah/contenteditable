@@ -39,7 +39,6 @@ const Grid = {
     window.requestAnimationFrame(() => {
       const editorRect = editor.getBoundingClientRect();
       const lineRange = new Range();
-      console.log('total', editor.view);
       const walker = document.createTreeWalker(editor.view, NodeFilter.SHOW_ELEMENT, {
         acceptNode: function () {
           return NodeFilter.FILTER_ACCEPT;
@@ -51,18 +50,16 @@ const Grid = {
         const node = walker.currentNode as Element;
         const tagName = node.nodeName.toLowerCase();
         tagNames.push(tagName);
-        if (!['span', 'br'].includes(tagName)) {
+        if (!['span', 'br', 'u'].includes(tagName)) {
           // console.log('??', 'line+', node);
           // span, br 태그를 제외한 모든 태그는 개행이 된다
           line += 1;
         }
-        // if (node?.nodeName.toLowerCase() === 'br') {
-        //   // br이 연속으로 있을 때는 개행이 된다.
-        //   line += 1;
-        // }
-        if (['span', 'br'].includes(tagName)) {
+        if (['span', 'br', 'u'].includes(tagName)) {
+          // console.log('tagName');
           if (node.firstChild) {
             // span 태그 안의 텍스트 크기를 구하려고 nodecontents함수 사용
+
             lineRange.selectNodeContents(node);
           } else {
             // br 태그 선택
@@ -70,7 +67,7 @@ const Grid = {
           }
           const topRects = Array.from(lineRange.getClientRects()).map(rect => rect.top);
 
-          if (topRects.length > 1) {
+          if (topRects.length > 1 && tagName !== 'u') {
             // wordrap현상으로(글이 길어서 라인이 바뀔때 개행을 구해준다.
             line += topRects.length - 1;
           }
@@ -81,13 +78,36 @@ const Grid = {
               range.setStart(node.firstChild, i);
               range.setEnd(node.firstChild, i + 1);
               const { x, y, top, left, width, height, right, bottom } = range.getBoundingClientRect();
+              if (tagName === 'u') {
+                // console.log('u', '힝', range.getBoundingClientRect(), walker.currentNode);
+                // range.getBoundingClientRect();
+              }
               // 앞에 br 태그가 있으면 이전 br값과 현재 node의 top 값을 비교하여 라인을 계산한다
               if (typeof brTop === 'number' && top > brTop) {
                 line += 1;
                 brTop = null;
               }
               const key = weakMap.get(node)?.key;
-              if (key) {
+              // console.log(!!key, tagName === 'u');
+              if (tagName === 'u' && walker.currentNode.parentElement) {
+                grid.push({
+                  key: weakMap.get(walker.currentNode.parentElement)!.key,
+                  line: line - (topRects.length - topRects.findIndex(item => item === top)),
+                  x: x - editorRect.x,
+                  y: y - editorRect.y,
+                  top: top - editorRect.top,
+                  left: left - editorRect.left,
+                  width,
+                  height,
+                  right: right - editorRect.left,
+                  bottom: bottom - editorRect.top,
+                  node: walker.currentNode,
+                  offset: i,
+                  text: range.toString(),
+                });
+                console.log('grid', grid[grid.length - 1]);
+              }
+              if (key && tagName !== 'u') {
                 grid.push({
                   key,
                   line: line - (topRects.length - topRects.findIndex(item => item === top)),

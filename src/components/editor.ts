@@ -131,6 +131,13 @@ class EditorElement extends HTMLElement {
     Grid.create(this);
   }
 
+  async render2() {
+    this.#view?.remove();
+    const { fragment, node } = json2EditorNode(this.FiberData, this.#FiberNodeWeakMap, this.#FiberNodeMap);
+    this.wrapper.appendChild(fragment);
+    this.#view = node;
+  }
+
   addObserver(observer: any) {
     this.#observers.add(observer);
   }
@@ -164,24 +171,24 @@ class EditorElement extends HTMLElement {
   }
 
   connectedCallback() {
-    console.log('Custom square element added to page.');
+    // console.log('Custom square element added to page.');
     // 커스텀 Caret을 위한 Grid
     // Grid.create(this);
     this.notifyObservers();
   }
 
   disconnectedCallback() {
-    console.log('Custom square element removed from page.');
+    // console.log('Custom square element removed from page.');
     this.#observers.clear();
   }
 
   adoptedCallback() {
-    console.log('Custom square element moved to new page.');
+    // console.log('Custom square element moved to new page.');
   }
 
   attributeChangedCallback(name: any, oldValue: any, newValue: any) {
     this.notifyObservers();
-    console.log('Custom square element attributes changed.');
+    // console.log('Custom square element attributes changed.');
   }
 }
 

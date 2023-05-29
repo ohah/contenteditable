@@ -6,7 +6,7 @@
 /* eslint-disable no-param-reassign */
 import { ViewNode } from 'core/Grid';
 
-import { EditorFiberNode, EditorNode, FiberNodeWeakMap } from 'components/Editor';
+import Editor, { EditorFiberNode, EditorNode, FiberNodeWeakMap } from 'components/Editor';
 
 /* eslint-disable no-bitwise */
 export function uuidv4() {
@@ -47,8 +47,12 @@ export const json2EditorNode = (EditorNode: EditorFiberNode[], FiberNodeWeakMap:
     }
     if (node.type === 'text') {
       const span = (FibderNodeMap.get(node.key) as HTMLSpanElement) || (document.createElement('span') as HTMLSpanElement);
+      Array.from(span.childNodes).forEach(child => {
+        child.remove();
+      });
       const textNode = (FibderNodeMap.get(node.key)?.firstChild as Text) || document.createTextNode('');
       textNode.textContent = node.text || '';
+
       if (node.format?.includes('bold')) {
         span.style.fontSize = '24px';
       }
@@ -90,3 +94,5 @@ Object.prototype.isEquals = (obj1, obj2) => {
   }
   return true;
 };
+
+export const IS_COMPOSING: WeakMap<Editor, boolean> = new WeakMap();
