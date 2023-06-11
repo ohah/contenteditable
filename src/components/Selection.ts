@@ -2,6 +2,8 @@
 /* eslint-disable no-useless-constructor */
 /* eslint-disable class-methods-use-this */
 
+import { CompoistionType, InputType } from '@types';
+import { SelectionInputEvent } from 'core';
 import Grid, { Location } from 'core/Grid';
 import { initialSelectState, SelectionState, State } from 'core/State';
 
@@ -41,6 +43,7 @@ class Selection extends HTMLElement {
     this.#contentEditable = document.createElement('div');
     this.#contentEditable.contentEditable = 'true';
     this.#contentEditable.addEventListener('compositionstart', e => {
+      this.input(new SelectionInputEvent('insertCompositionText', { ...e }));
       IS_COMPOSING.set(this.editor, true);
       console.log('compositionstart', e);
       if (this.state.anchorNode) {
@@ -52,8 +55,23 @@ class Selection extends HTMLElement {
         this.state.anchorNode.insertBefore(this.#imeElement, split);
       }
     });
-    // this.#textArea.addEventListener('compositionupdate', e => {});
+    this.#contentEditable.addEventListener('compositionupdate', e => {
+      const event = new InputEvent('insertCompositionText', e);
+      Object.assign(event, { compositonType: 'compositionupdate' });
+      this.input(new SelectionInputEvent('insertCompositionText', event));
+    });
     this.#contentEditable.addEventListener('compositionend', async e => {
+      const event = new InputEvent('insertCompositionText', e);
+      if (e.data.length > 1) {
+        Object.assign(event, { compositonType: 'compositionupdate' });
+        this.input(event);
+        for (let i = 1; i < e.data.length; i += 1) {
+          Object.assign(event, { compositonType: 'compositionstart' });
+          this.input(new SelectionInputEvent('insertCompositionText', { ...e, compositonType: 'compositionstart' }));
+        }
+        Object.assign(event, { compositonType: 'compositionend' });
+        this.input(new SelectionInputEvent('insertCompositionText', { ...e, compositonType: 'compositionend' }));
+      }
       console.log('compositionend', e);
       IS_COMPOSING.set(this.editor, false);
       if (this.state.anchorNode) {
@@ -82,19 +100,20 @@ class Selection extends HTMLElement {
       const event = e as InputEvent;
       event.preventDefault();
       const { inputType } = event;
-      if (IS_COMPOSING.get(this.editor)) {
-        this.#imeElement.textContent = e.data;
-        // this.editor.render();
-        window.requestIdleCallback(() => {
-          Grid.create(this.editor);
-          console.log('isComposing', this.#grid);
-        });
-      }
+      // if (IS_COMPOSING.get(this.editor)) {
+      //   this.#imeElement.textContent = e.data;
+      //   // this.editor.render();
+      //   window.requestIdleCallback(() => {
+      //     Grid.create(this.editor);
+      //     // console.log('isComposing', this.#grid);
+      //   });
+      // }
       // console.log('inputType', inputType, event.data, e.composed, event.isComposing);
       // if (inputType === 'insertCompositionText') {
       // }
       // console.log('inputType', inputType);
       if (inputType === 'insertText') {
+        this.input(new SelectionInputEvent(inputType, e));
         if (this.state.anchorNode) {
           const nodeKey = this.editor.weakMap.get(this.state.anchorNode);
           const splitText = nodeKey?.text?.split('');
@@ -108,6 +127,9 @@ class Selection extends HTMLElement {
             this.modify('move', 'right', 'character');
           });
         }
+      }
+      if (inputType === 'deleteContentBackward') {
+        this.input(new SelectionInputEvent(inputType, e));
       }
       // if (inputType === 'insertCompositionText') {
       //   console.log('e', e);
@@ -171,6 +193,12 @@ class Selection extends HTMLElement {
   set grid(data: Location[]) {
     this.#grid = data;
     // Selection(this.editor);
+  }
+
+  input(e: SelectionInputEvent) {
+    // const { inputType, compos } = e;
+    // if(e === '')
+    console.log('input', e);
   }
 
   render() {
