@@ -42,97 +42,42 @@ class Selection extends HTMLElement {
     this.editor = editor;
     this.#contentEditable = document.createElement('div');
     this.#contentEditable.contentEditable = 'true';
+    this.#contentEditable.addEventListener<any>('textInput', this.textInput);
     this.#contentEditable.addEventListener('compositionstart', e => {
-      this.input(new SelectionInputEvent('insertCompositionText', { ...e }));
-      IS_COMPOSING.set(this.editor, true);
-      console.log('compositionstart', e);
-      if (this.state.anchorNode) {
-        const nodeKey = this.editor.weakMap.get(this.state.anchorNode);
-        console.log('com', this.state.anchorNode);
-        const textNode = this.state.anchorNode.firstChild as Text;
-        const split = textNode.splitText(this.state.anchorOffset || 0) as Node;
-        console.log('split', split);
-        this.state.anchorNode.insertBefore(this.#imeElement, split);
-      }
+      // console.log('this.editor', this.editor);
+      const event = new InputEvent('insertCompositionText', e);
+      Object.assign(event, { compositonType: 'compositionstart', editor: this.editor });
+      this.#contentEditable.dispatchEvent(new SelectionInputEvent('insertCompositionText', event as never));
     });
     this.#contentEditable.addEventListener('compositionupdate', e => {
       const event = new InputEvent('insertCompositionText', e);
-      Object.assign(event, { compositonType: 'compositionupdate' });
-      this.input(new SelectionInputEvent('insertCompositionText', event));
+      Object.assign(event, { compositonType: 'compositionupdate', editor: this.editor });
+      this.#contentEditable.dispatchEvent(new SelectionInputEvent('insertCompositionText', event as never));
     });
-    this.#contentEditable.addEventListener('compositionend', async e => {
+    this.#contentEditable.addEventListener('compositionend', e => {
       const event = new InputEvent('insertCompositionText', e);
-      if (e.data.length > 1) {
-        Object.assign(event, { compositonType: 'compositionupdate' });
-        this.input(event);
+      if (this.#imeElement.textContent?.length || 0 > 1) {
+        Object.assign(event, { compositonType: 'compositionupdate', editor: this.editor });
+        this.#contentEditable.dispatchEvent(new SelectionInputEvent('insertCompositionText', event as never));
         for (let i = 1; i < e.data.length; i += 1) {
-          Object.assign(event, { compositonType: 'compositionstart' });
-          this.input(new SelectionInputEvent('insertCompositionText', { ...e, compositonType: 'compositionstart' }));
+          Object.assign(event, { compositonType: 'compositionstart', editor: this.editor });
+          this.#contentEditable.dispatchEvent(new SelectionInputEvent('insertCompositionText', event as never));
         }
-        Object.assign(event, { compositonType: 'compositionend' });
-        this.input(new SelectionInputEvent('insertCompositionText', { ...e, compositonType: 'compositionend' }));
-      }
-      console.log('compositionend', e);
-      IS_COMPOSING.set(this.editor, false);
-      if (this.state.anchorNode) {
-        const nodeKey = this.editor.weakMap.get(this.state.anchorNode);
-        console.log('nodeKey', nodeKey, this.state.anchorNode);
-        const splitText = nodeKey?.text?.split('');
-        if (nodeKey && this.state.location && this.state.location.text) {
-          // const text = this.#imeElement.textContent?.trimEnd() || '';
-          const text = this.#imeElement.textContent?.trimEnd() || '';
-          // console.log('text', text);
-          this.#imeElement.remove();
-          // console.log('text', text.trimEnd());
-          this.state.location.text = text;
-          nodeKey.text = [...(splitText?.slice(0, this.state.anchorOffset || 0) || []), text, ...(splitText?.slice(this.state.anchorOffset || 0, splitText.length) || [])].join('');
-          // console.log('nodeKey', nodeKey);
-        }
-        console.log('this.editor.weakMap', this.editor.weakMap);
-        this.#imeElement.textContent = '';
-        this.editor.render2();
-        window.requestIdleCallback(() => {
-          this.modify('move', 'right', 'character');
-        });
+        Object.assign(event, { compositonType: 'compositionend', editor: this.editor });
+        this.#contentEditable.dispatchEvent(new SelectionInputEvent('insertCompositionText', event as never));
       }
     });
     this.#contentEditable.addEventListener('beforeinput', (e: any) => {
       const event = e as InputEvent;
       event.preventDefault();
       const { inputType } = event;
-      // if (IS_COMPOSING.get(this.editor)) {
-      //   this.#imeElement.textContent = e.data;
-      //   // this.editor.render();
-      //   window.requestIdleCallback(() => {
-      //     Grid.create(this.editor);
-      //     // console.log('isComposing', this.#grid);
-      //   });
-      // }
-      // console.log('inputType', inputType, event.data, e.composed, event.isComposing);
-      // if (inputType === 'insertCompositionText') {
-      // }
-      // console.log('inputType', inputType);
-      if (inputType === 'insertText') {
-        this.input(new SelectionInputEvent(inputType, e));
-        if (this.state.anchorNode) {
-          const nodeKey = this.editor.weakMap.get(this.state.anchorNode);
-          const splitText = nodeKey?.text?.split('');
-          if (nodeKey && this.state.location && this.state.location.text) {
-            const text = e.data;
-            this.state.location.text = text;
-            nodeKey.text = [...(splitText?.slice(0, this.state.anchorOffset || 0) || []), e.data, ...(splitText?.slice(this.state.anchorOffset || 0, splitText.length) || [])].join('');
-          }
-          this.editor.render();
-          window.requestIdleCallback(() => {
-            this.modify('move', 'right', 'character');
-          });
-        }
+      // const customEvent = new InputEvent(inputType as never, e);
+      Object.assign(event, { editor: this.editor });
+      if (inputType !== 'insertCompositionText') {
+        this.#contentEditable.dispatchEvent(new SelectionInputEvent(inputType as never, event as never));
       }
-      if (inputType === 'deleteContentBackward') {
-        this.input(new SelectionInputEvent(inputType, e));
-      }
-      // if (inputType === 'insertCompositionText') {
-      //   console.log('e', e);
+      // if (inputType === 'deleteContentBackward') {
+      //   this.#contentEditable.dispatchEvent(new SelectionInputEvent(inputType, e));
       // }
     });
     window.addEventListener('resize', () => {
@@ -195,10 +140,114 @@ class Selection extends HTMLElement {
     // Selection(this.editor);
   }
 
-  input(e: SelectionInputEvent) {
+  get imeElement() {
+    return this.#imeElement;
+  }
+
+  textInput(e: SelectionInputEvent) {
+    console.log('textInput', e);
+    const { editor, compositonType, inputType } = e;
+    const state = editor?.Selection.state;
+    const imeElement = editor?.Selection.imeElement;
+    if (!state?.anchorNode) return;
+    if (!editor) return;
+    switch (inputType) {
+      case 'insertText':
+        if (state.anchorNode) {
+          const nodeKey = editor.weakMap.get(state.anchorNode);
+          const splitText = nodeKey?.text?.split('');
+          if (nodeKey && state.location && state.location.text) {
+            const text = e.data;
+            state.location.text = text;
+            nodeKey.text = [...(splitText?.slice(0, state.anchorOffset || 0) || []), e.data, ...(splitText?.slice(state.anchorOffset || 0, splitText.length) || [])].join('');
+            window.requestIdleCallback(() => {
+              editor.render();
+              window.requestIdleCallback(() => {
+                editor.Selection.modify('move', 'right', 'character');
+              });
+            });
+          }
+        }
+        break;
+      case 'deleteContentBackward':
+        {
+          const nodeKey = editor.weakMap.get(state.anchorNode);
+          const splitText = nodeKey?.text?.split('');
+          if (nodeKey && state.location && state.location.text) {
+            const text = e.data;
+            state.location.text = text;
+            nodeKey.text = [...(splitText?.slice(0, state.anchorOffset || 0) || []), ...(splitText?.slice((state.anchorOffset || 0) + 1 || 0, splitText.length) || [])].join('');
+            // nodeKey.text = 'ㅁ';
+            window.requestIdleCallback(() => {
+              editor.render();
+              // editor.Selection.setState({
+              //   ...state,
+              // });
+              // editor.Selection.modify('move', 'right', 'character');
+              editor.Selection.modify('move', 'left', 'character');
+            });
+          }
+        }
+        break;
+      default:
+        break;
+    }
+    if (!imeElement) return;
+    switch (compositonType) {
+      case 'compositionstart':
+        window.requestIdleCallback(() => {
+          editor.render();
+          // editor.Selection.modify('move', 'right', 'character');
+          window.requestIdleCallback(() => {
+            // const nodeKey = editor.weakMap.get(state.anchorNode);
+            console.log('com', state.anchorNode);
+            const textNode = state.anchorNode?.firstChild as Text;
+            const split = textNode.splitText(state.anchorOffset || 0) as Node;
+            console.log('split', split);
+            state?.anchorNode?.insertBefore(imeElement, split);
+          });
+        });
+
+        break;
+      case 'compositionupdate':
+        imeElement.textContent = e.data || '';
+        break;
+      case 'compositionend':
+        // window.requestIdleCallback(() => {
+        //   editor.render();
+        //   // window.requestIdleCallback(() => {
+        //   //   // editor.Selection.modify('move', 'right', 'character');
+        //   //   editor.Selection.modify('move', 'right', 'character');
+        //   // });
+        // });
+        {
+          const nodeKey = editor.weakMap.get(state.anchorNode);
+          console.log('nodeKey', nodeKey, state.anchorNode);
+          const splitText = nodeKey?.text?.split('');
+          if (nodeKey && state.location && state.location.text) {
+            // const text = imeElement.textContent?.trimEnd() || '';
+            const text = imeElement.textContent?.trimEnd() || '';
+            // console.log('text', text);
+            imeElement.remove();
+            // console.log('text', text.trimEnd());
+            state.location.text = text;
+            nodeKey.text = [...(splitText?.slice(0, state.anchorOffset || 0) || []), text, ...(splitText?.slice(state.anchorOffset || 0, splitText.length) || [])].join('');
+            // console.log('nodeKey', nodeKey);
+          }
+          imeElement.textContent = '';
+          console.log('currentTarget', e);
+          (e.currentTarget as HTMLDivElement).textContent = '';
+          editor.Selection.modify('move', 'right', 'character');
+          // console.log('this.editor.weakMap', editor.weakMap);
+        }
+        break;
+      default:
+        break;
+    }
+    // console.log('test.e', e);
     // const { inputType, compos } = e;
     // if(e === '')
-    console.log('input', e);
+    // console.log('input', e);
   }
 
   render() {
