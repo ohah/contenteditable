@@ -145,7 +145,7 @@ class Selection extends HTMLElement {
   }
 
   textInput(e: SelectionInputEvent) {
-    console.log('textInput', e);
+    // console.log('textInput', e);
     const { editor, compositonType, inputType } = e;
     const state = editor?.Selection.state;
     const imeElement = editor?.Selection.imeElement;
@@ -160,11 +160,11 @@ class Selection extends HTMLElement {
             const text = e.data;
             state.location.text = text;
             nodeKey.text = [...(splitText?.slice(0, state.anchorOffset || 0) || []), e.data, ...(splitText?.slice(state.anchorOffset || 0, splitText.length) || [])].join('');
-            window.requestIdleCallback(() => {
-              editor.render();
-              window.requestIdleCallback(() => {
-                editor.Selection.modify('move', 'right', 'character');
-              });
+            editor.render().then(async data => {
+              console.log('data', data);
+              // setTimeout(() => {
+              await editor.Selection.modify('move', 'right', 'character');
+              // }, 10);
             });
           }
         }
@@ -178,13 +178,8 @@ class Selection extends HTMLElement {
             state.location.text = text;
             nodeKey.text = [...(splitText?.slice(0, state.anchorOffset || 0) || []), ...(splitText?.slice((state.anchorOffset || 0) + 1 || 0, splitText.length) || [])].join('');
             // nodeKey.text = 'ㅁ';
-            window.requestIdleCallback(() => {
-              editor.render();
-              // editor.Selection.setState({
-              //   ...state,
-              // });
-              // editor.Selection.modify('move', 'right', 'character');
-              editor.Selection.modify('move', 'left', 'character');
+            editor.render().then(async () => {
+              await editor.Selection.modify('move', 'left', 'character');
             });
           }
         }
@@ -195,19 +190,15 @@ class Selection extends HTMLElement {
     if (!imeElement) return;
     switch (compositonType) {
       case 'compositionstart':
-        window.requestIdleCallback(() => {
-          editor.render();
-          // editor.Selection.modify('move', 'right', 'character');
-          window.requestIdleCallback(() => {
-            // const nodeKey = editor.weakMap.get(state.anchorNode);
-            console.log('com', state.anchorNode);
-            const textNode = state.anchorNode?.firstChild as Text;
-            const split = textNode.splitText(state.anchorOffset || 0) as Node;
-            console.log('split', split);
-            state?.anchorNode?.insertBefore(imeElement, split);
-          });
-        });
+        editor.render().then(() => {});
 
+        {
+          console.log('com', state.anchorNode);
+          const textNode = state.anchorNode?.firstChild as Text;
+          const split = textNode.splitText(state.anchorOffset || 0) as Node;
+          console.log('split', split);
+          state?.anchorNode?.insertBefore(imeElement, split);
+        }
         break;
       case 'compositionupdate':
         imeElement.textContent = e.data || '';
@@ -250,7 +241,7 @@ class Selection extends HTMLElement {
     // console.log('input', e);
   }
 
-  render() {
+  async render() {
     if (this.state.type === 'Caret') {
       // this.removeChild(this.#range);
       this.#caret.setAttribute('top', `${this.state.location?.top}px`);
@@ -262,7 +253,7 @@ class Selection extends HTMLElement {
       // this.removeChild(this.#caret)
     }
     this.editor.focus();
-    window.requestAnimationFrame(() => {
+    return window.requestAnimationFrame(() => {
       if (this.state.anchorNode) {
         this.editor.wrapper.after(this.#debug);
         this.#debug.innerText = JSON.stringify(this.state, null, 2);

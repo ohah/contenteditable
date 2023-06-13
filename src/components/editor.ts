@@ -33,6 +33,9 @@ interface Options {
   data: EditorNode[];
 }
 
+export type ObserverMap = Map<string, any>;
+// export type ObserverType = string, any
+
 export type FiberNodeWeakMap = WeakMap<ViewNode, EditorFiberNode>;
 export type FiberNodeMap = Map<string, ViewNode>;
 
@@ -58,7 +61,7 @@ class EditorElement extends HTMLElement {
 
   #view: HTMLDivElement;
 
-  #observers: Set<any>;
+  #observers: ObserverMap;
 
   static get observedAttributes() {
     return ['test', 'l'];
@@ -79,7 +82,7 @@ class EditorElement extends HTMLElement {
     // this.wrapper.style.height = '300px';
     // this.wrapper.style.overflowY = 'auto';
     // this.wrapper.style.userSelect = 'none';
-    this.#observers = new Set();
+    this.#observers = new Map();
 
     const shadow = this.attachShadow({ mode: 'open' });
     const style = document.createElement('style');
@@ -128,7 +131,7 @@ class EditorElement extends HTMLElement {
     const { fragment, node } = json2EditorNode(this.FiberData, this.#FiberNodeWeakMap, this.#FiberNodeMap);
     this.wrapper.appendChild(fragment);
     this.#view = node;
-    Grid.create(this);
+    return Grid.create(this);
   }
 
   async render2() {
@@ -136,18 +139,20 @@ class EditorElement extends HTMLElement {
     const { fragment, node } = json2EditorNode(this.FiberData, this.#FiberNodeWeakMap, this.#FiberNodeMap);
     this.wrapper.appendChild(fragment);
     this.#view = node;
+    return Grid.create(this);
   }
 
-  addObserver(observer: any) {
-    this.#observers.add(observer);
+  addObserver(key: string, func: () => void) {
+    this.#observers.set(key, func);
   }
 
   notifyObservers() {
+    // Promise.all(this.#observers)
     this.#observers.forEach(observer => observer(this));
   }
 
-  removeObserver(observer: any) {
-    this.#observers.delete(observer);
+  removeObserver(key: string) {
+    this.#observers.delete(key);
   }
 
   get Selection() {
