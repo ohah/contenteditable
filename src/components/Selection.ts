@@ -160,11 +160,8 @@ class Selection extends HTMLElement {
             const text = e.data;
             state.location.text = text;
             nodeKey.text = [...(splitText?.slice(0, state.anchorOffset || 0) || []), e.data, ...(splitText?.slice(state.anchorOffset || 0, splitText.length) || [])].join('');
-            editor.render().then(async data => {
-              console.log('data', data);
-              // setTimeout(() => {
-              await editor.Selection.modify('move', 'right', 'character');
-              // }, 10);
+            editor.render().then(data => {
+              editor.Selection.modify('move', 'right', 'character');
             });
           }
         }
@@ -188,84 +185,62 @@ class Selection extends HTMLElement {
         break;
     }
     if (!imeElement) return;
+    console.log('compositonType', compositonType);
     switch (compositonType) {
       case 'compositionstart':
-        editor.render().then(() => {});
-
-        {
-          console.log('com', state.anchorNode);
-          const textNode = state.anchorNode?.firstChild as Text;
-          const split = textNode.splitText(state.anchorOffset || 0) as Node;
-          console.log('split', split);
-          state?.anchorNode?.insertBefore(imeElement, split);
-        }
+        Grid.imeUpdate(editor);
         break;
       case 'compositionupdate':
+        // console.log('compositionupdate', imeElement);
         imeElement.textContent = e.data || '';
+        // editor.render();
         break;
       case 'compositionend':
-        // window.requestIdleCallback(() => {
-        //   editor.render();
-        //   // window.requestIdleCallback(() => {
-        //   //   // editor.Selection.modify('move', 'right', 'character');
-        //   //   editor.Selection.modify('move', 'right', 'character');
-        //   // });
-        // });
         {
           const nodeKey = editor.weakMap.get(state.anchorNode);
-          console.log('nodeKey', nodeKey, state.anchorNode);
           const splitText = nodeKey?.text?.split('');
           if (nodeKey && state.location && state.location.text) {
             // const text = imeElement.textContent?.trimEnd() || '';
             const text = imeElement.textContent?.trimEnd() || '';
-            // console.log('text', text);
-            imeElement.remove();
-            // console.log('text', text.trimEnd());
+            // imeElement.remove();
             state.location.text = text;
             nodeKey.text = [...(splitText?.slice(0, state.anchorOffset || 0) || []), text, ...(splitText?.slice(state.anchorOffset || 0, splitText.length) || [])].join('');
             // console.log('nodeKey', nodeKey);
           }
-          imeElement.textContent = '';
-          console.log('currentTarget', e);
+          // imeElement.textContent = '';
           (e.currentTarget as HTMLDivElement).textContent = '';
-          editor.Selection.modify('move', 'right', 'character');
-          // console.log('this.editor.weakMap', editor.weakMap);
+          editor.render().then(() => {
+            console.log('실행');
+            editor.Selection.modify('move', 'right', 'character');
+          });
         }
         break;
       default:
         break;
     }
-    // console.log('test.e', e);
-    // const { inputType, compos } = e;
-    // if(e === '')
-    // console.log('input', e);
   }
 
-  async render() {
-    if (this.state.type === 'Caret') {
-      // this.removeChild(this.#range);
-      this.#caret.setAttribute('top', `${this.state.location?.top}px`);
-      this.#caret.setAttribute('left', `${this.state.location?.left}px`);
-      this.#caret.setAttribute('width', `${this.state.location?.text ? this.state.location?.width : '5'}px`);
-      this.#caret.setAttribute('height', `${this.state.location?.height}px`);
-      this.#wrapper.appendChild(this.#caret);
-    } else {
-      // this.removeChild(this.#caret)
-    }
-    this.editor.focus();
-    return window.requestAnimationFrame(() => {
+  render() {
+    return new Promise(resolve => {
+      if (this.state.type === 'Caret') {
+        // this.removeChild(this.#range);
+        this.#caret.setAttribute('top', `${this.state.location?.top}px`);
+        this.#caret.setAttribute('left', `${this.state.location?.left}px`);
+        this.#caret.setAttribute('width', `${this.state.location?.text ? this.state.location?.width : '5'}px`);
+        this.#caret.setAttribute('height', `${this.state.location?.height}px`);
+        this.#wrapper.appendChild(this.#caret);
+      } else {
+        // this.removeChild(this.#caret)
+      }
+      this.editor.focus();
       if (this.state.anchorNode) {
         this.editor.wrapper.after(this.#debug);
         this.#debug.innerText = JSON.stringify(this.state, null, 2);
-        // this.editor.render();
-        // Grid.create(this.editor);
-        // const nodeKey = this.editor.weakMap.get(this.state.anchorNode);
-        // this.#textArea.value = nodeKey?.text || '';
-        // this.#textArea.selectionStart = this.state.anchorOffset || 0;
-        // this.#textArea.selectionEnd = this.state.anchorOffset || 0;
       }
-      this.#contentEditable.focus();
-      Grid.create(this.editor);
+      Grid.create(this.editor).then(data => {
+        this.#contentEditable.focus();
+        resolve(data);
+      });
     });
   }
 
@@ -334,7 +309,7 @@ class Selection extends HTMLElement {
     }
   }
 
-  setState(value: SelectionState) {
+  async setState(value: SelectionState) {
     this.state = {
       ...this.state,
       ...value,

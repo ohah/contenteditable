@@ -33,11 +33,12 @@ export type GridLocation = Location;
 
 const Grid = {
   create: async (editor: EditorElement) => {
-    return new Promise((resolve, reject) => {
+    return new Promise(resolve => {
       const { weakMap } = editor;
       const grid: GridLocation[] = [];
       let brTop: number | null = null;
-      const res = window.requestAnimationFrame(async () => {
+      window.requestAnimationFrame(async () => {
+        // console.log('u', editor.view.querySelector('u'), editor.view);
         const editorRect = editor.getBoundingClientRect();
         const lineRange = new Range();
         const walker = document.createTreeWalker(editor.view, NodeFilter.SHOW_ELEMENT, {
@@ -51,6 +52,7 @@ const Grid = {
           const node = walker.currentNode as Element;
           const tagName = node.nodeName.toLowerCase();
           tagNames.push(tagName);
+          // console.log('tagName', tagName);
           if (!['span', 'br', 'u'].includes(tagName)) {
             // console.log('??', 'line+', node);
             // span, br 태그를 제외한 모든 태그는 개행이 된다
@@ -68,7 +70,7 @@ const Grid = {
             const topRects = Array.from(lineRange.getClientRects()).map(rect => rect.top);
 
             if (topRects.length > 1 && tagName !== 'u') {
-              // wordrap현상으로(글이 길어서 라인이 바뀔때 개행을 구해준다.
+              // wordrap현상으로(글이 길어서 라인이 바뀔때) 개행을 구해준다.
               line += topRects.length - 1;
             }
 
@@ -186,6 +188,12 @@ const Grid = {
         resolve(grid);
       });
     });
+  },
+  imeUpdate: async (editor: EditorElement) => {
+    const { state, imeElement } = editor.Selection;
+    const textNode = state.anchorNode?.firstChild as Text;
+    const split = textNode.splitText(state.anchorOffset || 0);
+    (state.anchorNode as HTMLElement).append(textNode, imeElement, split);
   },
 };
 
