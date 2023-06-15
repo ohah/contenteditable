@@ -1,7 +1,7 @@
 /* eslint-disable no-useless-constructor */
 /* eslint-disable constructor-super */
 /* eslint-disable no-unreachable */
-import { CompoistionType, InputType } from '@types';
+import { CompoistionType, InputType, SelectionInputType } from '@types';
 
 import { EditorElement } from 'components';
 
@@ -17,11 +17,11 @@ class SelectionInputEvent extends KeyboardEvent {
 
   data: string;
 
-  inputType: InputType;
+  inputType: SelectionInputType;
 
   editor: EditorElement | null;
 
-  constructor(type: InputType, eventInitDict: SelectionInputEventInit | undefined) {
+  constructor(type: SelectionInputType, eventInitDict: SelectionInputEventInit | undefined) {
     super('textInput', eventInitDict);
     this.compositonType = eventInitDict?.compositonType;
     this.data = eventInitDict?.data || '';

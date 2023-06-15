@@ -47,9 +47,18 @@ class Selection extends HTMLElement {
         IS_COMPOSING.set(editor, false);
       }
     });
+    this.#contentEditable.addEventListener('keydown', e => {
+      const event = new InputEvent('InsertKey', e);
+      Object.assign(event, { compositonType: undefined, editor: this.editor });
+      this.#contentEditable.dispatchEvent(
+        new SelectionInputEvent('InsertKey', {
+          ...event,
+        } as never),
+      );
+      console.log('keyDown', e);
+    });
     this.#contentEditable.addEventListener<any>('textInput', this.textInput);
     this.#contentEditable.addEventListener('compositionstart', e => {
-      // console.log('this.editor', this.editor);
       const event = new InputEvent('insertCompositionText', e);
       Object.assign(event, { compositonType: 'compositionstart', editor: this.editor });
       this.#contentEditable.dispatchEvent(new SelectionInputEvent('insertCompositionText', event as never));
@@ -63,6 +72,8 @@ class Selection extends HTMLElement {
     });
     this.#contentEditable.addEventListener('compositionend', e => {
       const event = new InputEvent('insertCompositionText', e);
+      console.log('edatalength', e.data.length, e.data);
+      // ios
       if (e.data.length > 1) {
         // Object.assign(event, { compositonType: 'compositionupdate', editor: this.editor });
         // this.#contentEditable.dispatchEvent(new SelectionInputEvent('insertCompositionText', event as never));
@@ -87,6 +98,7 @@ class Selection extends HTMLElement {
         this.state = IS_COMPOSING_STATE.get(this.editor)!;
         IS_COMPOSING.set(this.editor, false);
       } else {
+        // window
         Object.assign(event, { compositonType: 'compositionend', editor: this.editor });
         this.#contentEditable.dispatchEvent(new SelectionInputEvent('insertCompositionText', event as never));
       }
@@ -95,6 +107,7 @@ class Selection extends HTMLElement {
       const event = e as InputEvent;
       event.preventDefault();
       const { inputType } = event;
+      console.log('beforeInput', e);
       // const customEvent = new InputEvent(inputType as never, e);
       Object.assign(event, { editor: this.editor });
       if (inputType !== 'insertCompositionText') {
@@ -173,18 +186,19 @@ class Selection extends HTMLElement {
     const { editor, compositonType, inputType } = e;
     const state = editor?.Selection.state;
     const imeElement = editor?.Selection.imeElement;
+    let isComposing = e.isComposing;
     if (!state?.anchorNode) return;
     if (!editor) return;
-    // IS_COMPOSING_STATE.set(editor, this.state);
+    if (IS_COMPOSING.get(editor) === true) {
+      isComposing = true;
+    }
     if (compositonType === 'compositionstart') {
       IS_COMPOSING.set(editor, true);
     } else if (compositonType === undefined) {
       IS_COMPOSING.set(editor, false);
     }
     console.log('inputType', inputType, e);
-    // if(IS_COMPOSING.get(editor) === true) {
-
-    // }
+    // IS_COMPOSING_STATE.delete(editor);
     switch (inputType) {
       case 'insertText':
         if (state.anchorNode) {
@@ -193,7 +207,7 @@ class Selection extends HTMLElement {
           if (nodeKey && state.location && state.location.text) {
             const text = e.data;
             state.location.text = text;
-            if (e.isComposing) {
+            if (isComposing) {
               nodeKey.text = [...(splitText?.slice(0, (this.state.anchorOffset || 0) + 1) || []), e.data, ...(splitText?.slice((this.state.anchorOffset || 0) + 1, splitText.length) || [])].join('');
             } else {
               nodeKey.text = [...(splitText?.slice(0, state.anchorOffset || 0) || []), e.data, ...(splitText?.slice(state.anchorOffset || 0, splitText.length) || [])].join('');
@@ -201,6 +215,9 @@ class Selection extends HTMLElement {
             editor.render().then(data => {
               // console.log('insertTextRender');
               editor.Selection.modify('move', 'right', 'character');
+              // if (isComposing) {
+              // editor.Selection.modify('move', 'right', 'character');
+              // }
             });
           }
         }
@@ -232,7 +249,7 @@ class Selection extends HTMLElement {
           if (state) {
             this.state = {
               ...state,
-              anchorOffset: IS_COMPOSING.get(editor) ? (state.anchorOffset || 0) + 1 : state.anchorOffset,
+              anchorOffset: isComposing ? (state.anchorOffset || 0) + 1 : state.anchorOffset,
             };
             IS_COMPOSING_STATE.set(editor, this.state);
           }
@@ -261,8 +278,7 @@ class Selection extends HTMLElement {
             }
             (e.currentTarget as HTMLDivElement).textContent = '';
             editor.render().then(() => {
-              console.log('endrender');
-              // editor.Selection.modify('move', 'right', 'character');
+              editor.Selection.modify('move', 'right', 'character');
             });
           }
         }

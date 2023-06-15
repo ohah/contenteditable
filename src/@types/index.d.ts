@@ -6,6 +6,55 @@ export declare global {
 
 type CompoistionType = 'compositionstart' | 'compositionupdate' | 'compositionend';
 
+type CommandInputTypeCode =
+  | 'ArrowRight'
+  | 'ArrowLeft'
+  | 'ArrowDown'
+  | 'ArrowUp'
+  | 'PageDown'
+  | 'End'
+  | 'Home'
+  | 'Insert'
+  | 'Delete'
+  | 'ShiftLeft'
+  | 'ShiftRight'
+  | 'ControlLeft'
+  | 'ControlRight'
+  | 'AltLeft'
+  | 'AltRight'
+  | 'MetaLeft'
+  | 'MetaRight'
+  | 'CapsLock'
+  | 'Tab'
+  | 'Numpad0'
+  | 'Numpad1'
+  | 'Numpad2'
+  | 'Numpad3'
+  | 'Numpad4'
+  | 'Numpad5'
+  | 'Numpad6'
+  | 'Numpad7'
+  | 'Numpad8'
+  | 'Numpad9'
+  | 'Numpad9'
+  | 'NumpadSubtract' // -
+  | 'NumpadMultiply' // *
+  | 'NumpadDivide' // /
+  | 'Numpad9'
+  | 'Escape'
+  | 'F1'
+  | 'F2'
+  | 'F3'
+  | 'F4'
+  | 'F5'
+  | 'F6'
+  | 'F7'
+  | 'F8'
+  | 'F9'
+  | 'F10'
+  | 'F11'
+  | 'F12';
+
 type InputType =
   | 'insertText'
   | 'insertReplacementText'
@@ -53,3 +102,5 @@ type InputType =
   | 'formatBackColor'
   | 'formatFontColor'
   | 'formatFontName';
+
+type SelectionInputType = 'InsertKey' | CommandInputTypeCode | InputType;
