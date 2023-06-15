@@ -10,7 +10,7 @@ import { initialSelectState, SelectionState, State } from 'core/State';
 import { Caret, Range } from 'components';
 import { define } from 'components/default';
 import EditorElement from 'components/Editor';
-import { IS_COMPOSING } from 'utils';
+import { IS_COMPOSING, IS_COMPOSING_STATE } from 'utils';
 
 @define('editor-selection')
 class Selection extends HTMLElement {
@@ -42,6 +42,11 @@ class Selection extends HTMLElement {
     this.editor = editor;
     this.#contentEditable = document.createElement('div');
     this.#contentEditable.contentEditable = 'true';
+    this.#contentEditable.addEventListener('blur', e => {
+      if (editor) {
+        IS_COMPOSING.set(editor, false);
+      }
+    });
     this.#contentEditable.addEventListener<any>('textInput', this.textInput);
     this.#contentEditable.addEventListener('compositionstart', e => {
       // console.log('this.editor', this.editor);
@@ -51,18 +56,37 @@ class Selection extends HTMLElement {
     });
     this.#contentEditable.addEventListener('compositionupdate', e => {
       const event = new InputEvent('insertCompositionText', e);
-      Object.assign(event, { compositonType: 'compositionupdate', editor: this.editor });
-      this.#contentEditable.dispatchEvent(new SelectionInputEvent('insertCompositionText', event as never));
+      if (e.data.length > 1 === false) {
+        Object.assign(event, { compositonType: 'compositionupdate', editor: this.editor });
+        this.#contentEditable.dispatchEvent(new SelectionInputEvent('insertCompositionText', event as never));
+      }
     });
     this.#contentEditable.addEventListener('compositionend', e => {
       const event = new InputEvent('insertCompositionText', e);
-      if (this.#imeElement.textContent?.length || 0 > 1) {
-        Object.assign(event, { compositonType: 'compositionupdate', editor: this.editor });
-        this.#contentEditable.dispatchEvent(new SelectionInputEvent('insertCompositionText', event as never));
-        for (let i = 1; i < e.data.length; i += 1) {
-          Object.assign(event, { compositonType: 'compositionstart', editor: this.editor });
-          this.#contentEditable.dispatchEvent(new SelectionInputEvent('insertCompositionText', event as never));
-        }
+      if (e.data.length > 1) {
+        // Object.assign(event, { compositonType: 'compositionupdate', editor: this.editor });
+        // this.#contentEditable.dispatchEvent(new SelectionInputEvent('insertCompositionText', event as never));
+        // console.log('end', this.#imeElement.textContent, this.#contentEditable.textContent, data);
+        this.#contentEditable.dispatchEvent(
+          new SelectionInputEvent('insertCompositionText', {
+            ...event,
+            compositonType: 'compositionend',
+            editor: this.editor,
+            data: e.data[0],
+          } as never),
+        );
+        this.#contentEditable.dispatchEvent(
+          new SelectionInputEvent('insertText', {
+            ...event,
+            compositonType: undefined,
+            editor: this.editor,
+            isComposing: true,
+            data: e.data[1],
+          } as never),
+        );
+        this.state = IS_COMPOSING_STATE.get(this.editor)!;
+        IS_COMPOSING.set(this.editor, false);
+      } else {
         Object.assign(event, { compositonType: 'compositionend', editor: this.editor });
         this.#contentEditable.dispatchEvent(new SelectionInputEvent('insertCompositionText', event as never));
       }
@@ -151,6 +175,16 @@ class Selection extends HTMLElement {
     const imeElement = editor?.Selection.imeElement;
     if (!state?.anchorNode) return;
     if (!editor) return;
+    // IS_COMPOSING_STATE.set(editor, this.state);
+    if (compositonType === 'compositionstart') {
+      IS_COMPOSING.set(editor, true);
+    } else if (compositonType === undefined) {
+      IS_COMPOSING.set(editor, false);
+    }
+    console.log('inputType', inputType, e);
+    // if(IS_COMPOSING.get(editor) === true) {
+
+    // }
     switch (inputType) {
       case 'insertText':
         if (state.anchorNode) {
@@ -159,8 +193,13 @@ class Selection extends HTMLElement {
           if (nodeKey && state.location && state.location.text) {
             const text = e.data;
             state.location.text = text;
-            nodeKey.text = [...(splitText?.slice(0, state.anchorOffset || 0) || []), e.data, ...(splitText?.slice(state.anchorOffset || 0, splitText.length) || [])].join('');
+            if (e.isComposing) {
+              nodeKey.text = [...(splitText?.slice(0, (this.state.anchorOffset || 0) + 1) || []), e.data, ...(splitText?.slice((this.state.anchorOffset || 0) + 1, splitText.length) || [])].join('');
+            } else {
+              nodeKey.text = [...(splitText?.slice(0, state.anchorOffset || 0) || []), e.data, ...(splitText?.slice(state.anchorOffset || 0, splitText.length) || [])].join('');
+            }
             editor.render().then(data => {
+              // console.log('insertTextRender');
               editor.Selection.modify('move', 'right', 'character');
             });
           }
@@ -175,8 +214,8 @@ class Selection extends HTMLElement {
             state.location.text = text;
             nodeKey.text = [...(splitText?.slice(0, state.anchorOffset || 0) || []), ...(splitText?.slice((state.anchorOffset || 0) + 1 || 0, splitText.length) || [])].join('');
             // nodeKey.text = 'ㅁ';
-            editor.render().then(async () => {
-              await editor.Selection.modify('move', 'left', 'character');
+            editor.render().then(() => {
+              editor.Selection.modify('move', 'left', 'character');
             });
           }
         }
@@ -185,34 +224,47 @@ class Selection extends HTMLElement {
         break;
     }
     if (!imeElement) return;
-    console.log('compositonType', compositonType);
+    // console.log('compositonType', compositonType);
     switch (compositonType) {
       case 'compositionstart':
+        if (IS_COMPOSING_STATE.has(editor)) {
+          const state = IS_COMPOSING_STATE.get(editor);
+          if (state) {
+            this.state = {
+              ...state,
+              anchorOffset: IS_COMPOSING.get(editor) ? (state.anchorOffset || 0) + 1 : state.anchorOffset,
+            };
+            IS_COMPOSING_STATE.set(editor, this.state);
+          }
+        }
         Grid.imeUpdate(editor);
+        if (IS_COMPOSING_STATE.has(editor) === false) {
+          IS_COMPOSING_STATE.set(editor, state);
+          this.state = state;
+        }
         break;
       case 'compositionupdate':
-        // console.log('compositionupdate', imeElement);
         imeElement.textContent = e.data || '';
-        // editor.render();
+        Grid.insert(editor);
         break;
       case 'compositionend':
         {
-          const nodeKey = editor.weakMap.get(state.anchorNode);
-          const splitText = nodeKey?.text?.split('');
-          if (nodeKey && state.location && state.location.text) {
-            // const text = imeElement.textContent?.trimEnd() || '';
-            const text = imeElement.textContent?.trimEnd() || '';
-            // imeElement.remove();
-            state.location.text = text;
-            nodeKey.text = [...(splitText?.slice(0, state.anchorOffset || 0) || []), text, ...(splitText?.slice(state.anchorOffset || 0, splitText.length) || [])].join('');
-            // console.log('nodeKey', nodeKey);
+          const state = IS_COMPOSING_STATE.get(editor);
+          if (state) {
+            this.state = state;
+            const nodeKey = editor.weakMap.get(state.anchorNode!);
+            const splitText = nodeKey?.text?.split('');
+            if (nodeKey && state.location && state.location.text) {
+              const text = imeElement.textContent?.trimEnd() || '';
+              imeElement.remove();
+              nodeKey.text = [...(splitText?.slice(0, state.anchorOffset || 0) || []), text, ...(splitText?.slice(state.anchorOffset || 0, splitText.length) || [])].join('');
+            }
+            (e.currentTarget as HTMLDivElement).textContent = '';
+            editor.render().then(() => {
+              console.log('endrender');
+              // editor.Selection.modify('move', 'right', 'character');
+            });
           }
-          // imeElement.textContent = '';
-          (e.currentTarget as HTMLDivElement).textContent = '';
-          editor.render().then(() => {
-            console.log('실행');
-            editor.Selection.modify('move', 'right', 'character');
-          });
         }
         break;
       default:
@@ -319,36 +371,25 @@ class Selection extends HTMLElement {
 
   mousedown(e: MouseEvent, editor: EditorElement) {
     // console.log(e);
-    const { grid, setState } = this;
+    const { grid } = this;
     // console.log(editor);
     const x = editor.wrapper.scrollLeft + e.offsetX;
     const y = editor.wrapper.scrollTop + e.offsetY;
-    const Idx = grid.findIndex(cell => cell.top < y && cell.bottom > y && cell.left < x && cell.right > x);
+    const Idx = this.grid.findIndex(cell => cell.top < y && cell.bottom > y && cell.left < x && cell.right > x);
     if (Idx !== -1) {
       this.setState({
         ...this.state,
-        anchorOffset: grid[Idx].offset,
-        anchorNode: grid[Idx].node,
+        anchorOffset: this.grid[Idx].offset,
+        anchorNode: this.grid[Idx].node,
         anchorIndex: Idx,
-        focusOffset: grid[Idx].offset,
-        focusNode: grid[Idx].node,
+        focusOffset: this.grid[Idx].offset,
+        focusNode: this.grid[Idx].node,
         focusIndex: Idx,
-        location: grid[Idx],
+        location: this.grid[Idx],
         isCollased: false,
         type: 'Caret',
       });
     }
-    // const row = grid.find(row => row.top < y && row.bottom > y && row.left < x && row.right > x);
-    // if (row) {
-    //   const cell = row.cell.find(cell => cell.top < y && cell.bottom > y && cell.left < x && cell.right > x);
-    //   console.log('cell', cell?.text);
-    //   if (cell) {
-    //     // editor.Caret.setAttribute('top', `${cell.top}px`);
-    //     // editor.Caret.setAttribute('left', `${cell.left}px`);
-    //     // editor.Caret.setAttribute('width', `${cell.width}px`);
-    //     // editor.Caret.setAttribute('height', `${cell.height}px`);
-    //   }
-    // }
   }
 
   connectedCallback(): void {

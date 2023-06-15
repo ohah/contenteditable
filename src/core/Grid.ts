@@ -4,6 +4,7 @@ import { Cell } from 'core';
 import Row, { RowLocation } from 'core/Row';
 
 import { EditorElement } from 'components';
+import { IS_COMPOSING_STATE } from 'utils';
 
 /**
  * 실제로 화면에 출력되는 노드
@@ -32,7 +33,7 @@ export type GridLocation = Location;
 // }
 
 const Grid = {
-  create: async (editor: EditorElement) => {
+  create: async (editor: EditorElement): Promise<GridLocation[]> => {
     return new Promise(resolve => {
       const { weakMap } = editor;
       const grid: GridLocation[] = [];
@@ -60,8 +61,11 @@ const Grid = {
           }
           if (['span', 'br', 'u'].includes(tagName)) {
             // console.log('tagName');
-            if (node.firstChild) {
+            if (node.firstChild && node.childNodes.length === 1) {
               // span 태그 안의 텍스트 크기를 구하려고 nodecontents함수 사용
+              lineRange.selectNodeContents(node);
+            } else if (node.firstChild && node.childNodes.length > 1) {
+              // 한글 글쓰기중.
               lineRange.selectNodeContents(node);
             } else {
               // br 태그 선택
@@ -75,42 +79,19 @@ const Grid = {
             }
 
             const range = new Range();
-            if (node.firstChild) {
+            if (node.firstChild && node.childNodes.length === 1) {
               const length = node.firstChild.textContent?.length || 0;
               for (let i = 0; i < length; i += 1) {
                 range.setStart(node.firstChild, i);
                 range.setEnd(node.firstChild, i + 1);
                 const { x, y, top, left, width, height, right, bottom } = range.getBoundingClientRect();
-                if (tagName === 'u') {
-                  // console.log('u', '힝', range.getBoundingClientRect(), walker.currentNode);
-                  // range.getBoundingClientRect();
-                }
                 // 앞에 br 태그가 있으면 이전 br값과 현재 node의 top 값을 비교하여 라인을 계산한다
                 if (typeof brTop === 'number' && top > brTop) {
                   line += 1;
                   brTop = null;
                 }
                 const key = weakMap.get(node)?.key;
-                // console.log(!!key, tagName === 'u');
-                if (tagName === 'u' && walker.currentNode.parentElement) {
-                  grid.push({
-                    key: weakMap.get(walker.currentNode.parentElement)!.key,
-                    line: line - (topRects.length - topRects.findIndex(item => item === top)),
-                    x: x - editorRect.x,
-                    y: y - editorRect.y,
-                    top: top - editorRect.top,
-                    left: left - editorRect.left,
-                    width,
-                    height,
-                    right: right - editorRect.left,
-                    bottom: bottom - editorRect.top,
-                    node: walker.currentNode,
-                    offset: i,
-                    text: range.toString(),
-                  });
-                  console.log('grid', grid[grid.length - 1]);
-                }
-                if (key && tagName !== 'u') {
+                if (key) {
                   grid.push({
                     key,
                     line: line - (topRects.length - topRects.findIndex(item => item === top)),
@@ -145,6 +126,57 @@ const Grid = {
                   }
                 }
               }
+            } else if (node.firstChild && node.childNodes.length > 1) {
+              // console.log('한글입력');
+              Array.from(node.childNodes).forEach(item => {
+                const length = item.textContent?.length || 0;
+                for (let i = 0; i < length; i += 1) {
+                  range.setStart(item, i);
+                  range.setEnd(item, i + 1);
+                  const { x, y, top, left, width, height, right, bottom } = range.getBoundingClientRect();
+                  // 앞에 br 태그가 있으면 이전 br값과 현재 node의 top 값을 비교하여 라인을 계산한다
+                  if (typeof brTop === 'number' && top > brTop) {
+                    line += 1;
+                    brTop = null;
+                  }
+                  const key = weakMap.get(node)?.key;
+                  // console.log(!!key, tagName === 'u');
+                  if (key) {
+                    grid.push({
+                      key,
+                      line: line - (topRects.length - topRects.findIndex(item => item === top)),
+                      x: x - editorRect.x,
+                      y: y - editorRect.y,
+                      top: top - editorRect.top,
+                      left: left - editorRect.left,
+                      width,
+                      height,
+                      right: right - editorRect.left,
+                      bottom: bottom - editorRect.top,
+                      node: walker.currentNode,
+                      offset: i,
+                      text: range.toString(),
+                    });
+                    if (length - 1 === i) {
+                      if (!node.nextElementSibling) {
+                        grid.push({
+                          key,
+                          line: line - (topRects.length - topRects.findIndex(item => item === top)),
+                          x: x - editorRect.x,
+                          y: y - editorRect.y,
+                          top: top - editorRect.top,
+                          left: left + grid[grid.length - 1].width - editorRect.left,
+                          width: editor.offsetWidth - (left + grid[grid.length - 1].width),
+                          height,
+                          right: editor.offsetWidth - left,
+                          bottom: bottom - editorRect.top,
+                          node: walker.currentNode,
+                        });
+                      }
+                    }
+                  }
+                }
+              });
             } else {
               //br tag
               range.selectNode(node);
@@ -174,7 +206,6 @@ const Grid = {
             brTop = lineRange.getBoundingClientRect().top;
           }
         }
-        // console.table(tagNames);
         editor.shadowRoot?.querySelectorAll('[data-caret-area]').forEach(ele => {
           ele.remove();
         });
@@ -182,18 +213,42 @@ const Grid = {
           Cell.testBlock(editor, column);
         });
         editor.Selection.grid = grid;
-        // return grid;
-        // console.log('grid', grid);
-        // editor.addObserver("grid", (editor.Selection.));
         resolve(grid);
       });
     });
   },
   imeUpdate: async (editor: EditorElement) => {
-    const { state, imeElement } = editor.Selection;
-    const textNode = state.anchorNode?.firstChild as Text;
-    const split = textNode.splitText(state.anchorOffset || 0);
-    (state.anchorNode as HTMLElement).append(textNode, imeElement, split);
+    const { imeElement } = editor.Selection;
+    const state = IS_COMPOSING_STATE.has(editor) ? IS_COMPOSING_STATE.get(editor) : editor.Selection.state;
+    if (state) {
+      const textNode = state.anchorNode?.firstChild as Text;
+      const split = textNode.splitText(state.anchorOffset || 0);
+      (state.anchorNode as HTMLElement).append(textNode, imeElement, split);
+      // editor.Selection.state.anchorOffset = state.anchorOffset;
+      editor.Selection.state = state;
+    }
+  },
+  insert: async (editor: EditorElement) => {
+    Grid.create(editor).then(grid => {
+      const { x: eleX, y: eleY } = editor.Selection.imeElement.getBoundingClientRect();
+      const x = editor.wrapper.scrollLeft + eleX;
+      const y = editor.wrapper.scrollTop + eleY;
+      const Idx = grid.findIndex(cell => cell.top < y && cell.bottom > y && cell.left < x && cell.right > x);
+      if (Idx !== -1) {
+        editor.Selection.setState({
+          ...editor.Selection.state,
+          anchorOffset: grid[Idx].offset,
+          anchorNode: grid[Idx].node,
+          anchorIndex: Idx,
+          focusOffset: grid[Idx].offset,
+          focusNode: grid[Idx].node,
+          focusIndex: Idx,
+          location: grid[Idx],
+          isCollased: false,
+          type: 'Caret',
+        });
+      }
+    });
   },
 };
 

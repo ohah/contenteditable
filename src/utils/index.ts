@@ -5,6 +5,7 @@
 /* eslint-disable no-restricted-syntax */
 /* eslint-disable no-param-reassign */
 import { ViewNode } from 'core/Grid';
+import { SelectionState } from 'core/State';
 
 import Editor, { EditorFiberNode, EditorNode, FiberNodeWeakMap } from 'components/Editor';
 
@@ -96,3 +97,4 @@ Object.prototype.isEquals = (obj1, obj2) => {
 };
 
 export const IS_COMPOSING: WeakMap<Editor, boolean> = new WeakMap();
+export const IS_COMPOSING_STATE: WeakMap<Editor, SelectionState> = new WeakMap();
