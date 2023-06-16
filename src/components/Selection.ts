@@ -48,14 +48,14 @@ class Selection extends HTMLElement {
       }
     });
     this.#contentEditable.addEventListener('keydown', e => {
-      const event = new InputEvent('InsertKey', e);
-      Object.assign(event, { compositonType: undefined, editor: this.editor });
-      this.#contentEditable.dispatchEvent(
-        new SelectionInputEvent('InsertKey', {
-          ...event,
-        } as never),
-      );
-      console.log('keyDown', e);
+      // const event = new InputEvent('InsertKey', e);
+      // Object.assign(event, { compositonType: undefined, editor: this.editor });
+      // this.#contentEditable.dispatchEvent(
+      //   new SelectionInputEvent('InsertKey', {
+      //     ...event,
+      //   } as never),
+      // );
+      // console.log('keyDown', e);
     });
     this.#contentEditable.addEventListener<any>('textInput', this.textInput);
     this.#contentEditable.addEventListener('compositionstart', e => {
@@ -246,18 +246,19 @@ class Selection extends HTMLElement {
       case 'compositionstart':
         if (IS_COMPOSING_STATE.has(editor)) {
           const state = IS_COMPOSING_STATE.get(editor);
+          console.log('is', state);
           if (state) {
-            this.state = {
+            const newState = {
               ...state,
               anchorOffset: isComposing ? (state.anchorOffset || 0) + 1 : state.anchorOffset,
             };
-            IS_COMPOSING_STATE.set(editor, this.state);
+            IS_COMPOSING_STATE.set(editor, newState);
           }
         }
         Grid.imeUpdate(editor);
         if (IS_COMPOSING_STATE.has(editor) === false) {
           IS_COMPOSING_STATE.set(editor, state);
-          this.state = state;
+          // this.state = state;
         }
         break;
       case 'compositionupdate':
@@ -315,9 +316,9 @@ class Selection extends HTMLElement {
   modify(alter: 'move' | 'extend', direction: 'left' | 'right' | 'up' | 'down', granularity: 'character' | 'word' | 'sentence' | 'line' | 'paragraph') {
     if (typeof this.state.focusIndex !== 'number') return;
     const { grid, state } = this;
-    if (typeof state.focusIndex === 'number' && typeof state.anchorIndex === 'number') {
-      let focusIdx = state.focusIndex;
-      let anchorIdx = state.anchorIndex;
+    if (typeof this.state.focusIndex === 'number' && typeof this.state.anchorIndex === 'number') {
+      let focusIdx = this.state.focusIndex;
+      let anchorIdx = this.state.anchorIndex;
       let moveIdx = 1;
 
       if (direction === 'left') {
@@ -333,18 +334,18 @@ class Selection extends HTMLElement {
         if (['left', 'right'].includes(direction)) {
           focusIdx += moveIdx;
           anchorIdx += moveIdx;
-          if (state?.position) {
-            delete state.position;
+          if (this.state?.position) {
+            delete this.state.position;
           }
         }
         if (['up', 'down'].includes(direction)) {
-          if (state.location) {
-            if (!state?.position) {
-              state.position = state.location;
+          if (this.state.location) {
+            if (!this.state?.position) {
+              this.state.position = this.state.location;
             }
             moveIdx = direction === 'up' ? -1 : 1;
-            const line = grid.filter(cell => cell.line === moveIdx + (state?.location?.line || 0));
-            const { x, y } = state.position;
+            const line = grid.filter(cell => cell.line === moveIdx + (this.state?.location?.line || 0));
+            const { x, y } = this.state.position;
             const lineCell = line.findLast(cell => cell.left <= x && cell.right >= x);
             if (lineCell) {
               const Idx = grid.findIndex(cell => Object.isEquals(cell, lineCell));
@@ -363,7 +364,7 @@ class Selection extends HTMLElement {
       }
 
       this.setState({
-        ...state,
+        ...this.state,
         anchorOffset: grid[anchorIdx].offset,
         anchorNode: grid[anchorIdx].node,
         anchorIndex: anchorIdx,
@@ -378,11 +379,14 @@ class Selection extends HTMLElement {
   }
 
   async setState(value: SelectionState) {
+    // const oriState = this.state;
     this.state = {
       ...this.state,
       ...value,
     };
-    this.render();
+    this.render().then(() => {
+      // IS_COMPOSING_STATE.set(this.editor, oriState);
+    });
   }
 
   mousedown(e: MouseEvent, editor: EditorElement) {

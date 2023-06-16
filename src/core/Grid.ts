@@ -225,7 +225,8 @@ const Grid = {
       const split = textNode.splitText(state.anchorOffset || 0);
       (state.anchorNode as HTMLElement).append(textNode, imeElement, split);
       // editor.Selection.state.anchorOffset = state.anchorOffset;
-      editor.Selection.state = state;
+      // editor.Selection.state = state;
+      // IS_COMPOSING_STATE.delete(editor);
     }
   },
   insert: async (editor: EditorElement) => {
