@@ -1,10 +1,8 @@
 /* eslint-disable no-loop-func */
 /* eslint-disable no-param-reassign */
 import { Cell } from 'core';
-import Row, { RowLocation } from 'core/Row';
 
 import { EditorElement } from 'components';
-import { IS_COMPOSING_STATE } from 'utils';
 
 /**
  * 실제로 화면에 출력되는 노드
@@ -38,7 +36,7 @@ const Grid = {
       const { weakMap } = editor;
       const grid: GridLocation[] = [];
       let brTop: number | null = null;
-      window.requestAnimationFrame(async () => {
+      window.requestAnimationFrame(() => {
         // console.log('u', editor.view.querySelector('u'), editor.view);
         const editorRect = editor.getBoundingClientRect();
         const lineRange = new Range();
@@ -128,7 +126,9 @@ const Grid = {
               }
             } else if (node.firstChild && node.childNodes.length > 1) {
               // console.log('한글입력');
+              let offset = 0;
               Array.from(node.childNodes).forEach(item => {
+                console.log('item', item);
                 const length = item.textContent?.length || 0;
                 for (let i = 0; i < length; i += 1) {
                   range.setStart(item, i);
@@ -154,7 +154,7 @@ const Grid = {
                       right: right - editorRect.left,
                       bottom: bottom - editorRect.top,
                       node: walker.currentNode,
-                      offset: i,
+                      offset: offset,
                       text: range.toString(),
                     });
                     if (length - 1 === i) {
@@ -175,6 +175,7 @@ const Grid = {
                       }
                     }
                   }
+                  offset += 1;
                 }
               });
             } else {
@@ -206,49 +207,51 @@ const Grid = {
             brTop = lineRange.getBoundingClientRect().top;
           }
         }
-        editor.shadowRoot?.querySelectorAll('[data-caret-area]').forEach(ele => {
-          ele.remove();
-        });
-        grid.forEach(column => {
-          Cell.testBlock(editor, column);
-        });
+        // editor.shadowRoot?.querySelectorAll('[data-caret-area]').forEach(ele => {
+        //   ele.remove();
+        // });
+        // grid.forEach(column => {
+        //   Cell.testBlock(editor, column);
+        // });
         editor.Selection.grid = grid;
         resolve(grid);
+        console.log('grid', grid);
       });
     });
   },
   imeUpdate: async (editor: EditorElement) => {
     const { imeElement } = editor.Selection;
-    const state = IS_COMPOSING_STATE.has(editor) ? IS_COMPOSING_STATE.get(editor) : editor.Selection.state;
+    const { state } = editor.Selection;
     if (state) {
       const textNode = state.anchorNode?.firstChild as Text;
       const split = textNode.splitText(state.anchorOffset || 0);
       (state.anchorNode as HTMLElement).append(textNode, imeElement, split);
-      // editor.Selection.state.anchorOffset = state.anchorOffset;
-      // editor.Selection.state = state;
-      // IS_COMPOSING_STATE.delete(editor);
     }
   },
   insert: async (editor: EditorElement) => {
-    Grid.create(editor).then(grid => {
-      const { x: eleX, y: eleY } = editor.Selection.imeElement.getBoundingClientRect();
-      const x = editor.wrapper.scrollLeft + eleX;
-      const y = editor.wrapper.scrollTop + eleY;
-      const Idx = grid.findIndex(cell => cell.top < y && cell.bottom > y && cell.left < x && cell.right > x);
-      if (Idx !== -1) {
-        editor.Selection.setState({
-          ...editor.Selection.state,
-          anchorOffset: grid[Idx].offset,
-          anchorNode: grid[Idx].node,
-          anchorIndex: Idx,
-          focusOffset: grid[Idx].offset,
-          focusNode: grid[Idx].node,
-          focusIndex: Idx,
-          location: grid[Idx],
-          isCollased: false,
-          type: 'Caret',
-        });
-      }
+    return new Promise(resolve => {
+      Grid.create(editor).then(grid => {
+        const { x: eleX, y: eleY } = editor.Selection.imeElement.getBoundingClientRect();
+        const x = editor.wrapper.scrollLeft + eleX;
+        const y = editor.wrapper.scrollTop + eleY;
+        const Idx = grid.findIndex(cell => cell.top < y && cell.bottom > y && cell.left < x && cell.right > x);
+        if (Idx !== -1) {
+          editor.Selection.state = {
+            ...editor.Selection.state,
+            anchorOffset: grid[Idx].offset,
+            anchorNode: grid[Idx].node,
+            anchorIndex: Idx,
+            focusOffset: grid[Idx].offset,
+            focusNode: grid[Idx].node,
+            focusIndex: Idx,
+            location: grid[Idx],
+            isCollased: false,
+            type: 'Caret',
+          };
+          editor.Selection.render();
+          resolve({});
+        }
+      });
     });
   },
 };

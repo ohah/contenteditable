@@ -2,15 +2,14 @@
 /* eslint-disable no-useless-constructor */
 /* eslint-disable class-methods-use-this */
 
-import { CompoistionType, InputType } from '@types';
 import { SelectionInputEvent } from 'core';
 import Grid, { Location } from 'core/Grid';
-import { initialSelectState, SelectionState, State } from 'core/State';
+import { initialSelectState, SelectionState } from 'core/State';
 
 import { Caret, Range } from 'components';
 import { define } from 'components/default';
 import EditorElement from 'components/Editor';
-import { IS_COMPOSING, IS_COMPOSING_STATE } from 'utils';
+import { IS_COMPOSING } from 'utils';
 
 @define('editor-selection')
 class Selection extends HTMLElement {
@@ -57,7 +56,7 @@ class Selection extends HTMLElement {
       // );
       // console.log('keyDown', e);
     });
-    this.#contentEditable.addEventListener<any>('textInput', this.textInput);
+    this.#contentEditable.addEventListener<any>('textInput', this.textInput.bind(this));
     this.#contentEditable.addEventListener('compositionstart', e => {
       const event = new InputEvent('insertCompositionText', e);
       Object.assign(event, { compositonType: 'compositionstart', editor: this.editor });
@@ -95,7 +94,6 @@ class Selection extends HTMLElement {
             data: e.data[1],
           } as never),
         );
-        this.state = IS_COMPOSING_STATE.get(this.editor)!;
         IS_COMPOSING.set(this.editor, false);
       } else {
         // window
@@ -107,7 +105,7 @@ class Selection extends HTMLElement {
       const event = e as InputEvent;
       event.preventDefault();
       const { inputType } = event;
-      console.log('beforeInput', e);
+      // console.log('beforeInput', e);
       // const customEvent = new InputEvent(inputType as never, e);
       Object.assign(event, { editor: this.editor });
       if (inputType !== 'insertCompositionText') {
@@ -172,33 +170,35 @@ class Selection extends HTMLElement {
     return this.#grid;
   }
 
-  set grid(data: Location[]) {
-    this.#grid = data;
-    // Selection(this.editor);
+  set grid(_grid: Location[]) {
+    this.#grid = _grid;
   }
 
   get imeElement() {
     return this.#imeElement;
   }
 
+  set setState(_state: SelectionState) {
+    // const oriState = this.state;
+    this.state = {
+      ...this.state,
+      ..._state,
+    };
+    this.render();
+  }
+
   textInput(e: SelectionInputEvent) {
-    // console.log('textInput', e);
     const { editor, compositonType, inputType } = e;
     const state = editor?.Selection.state;
     const imeElement = editor?.Selection.imeElement;
-    let isComposing = e.isComposing;
     if (!state?.anchorNode) return;
     if (!editor) return;
-    if (IS_COMPOSING.get(editor) === true) {
-      isComposing = true;
-    }
+    const isComposing = IS_COMPOSING.get(editor) === true ? true : e.isComposing;
     if (compositonType === 'compositionstart') {
       IS_COMPOSING.set(editor, true);
     } else if (compositonType === undefined) {
       IS_COMPOSING.set(editor, false);
     }
-    console.log('inputType', inputType, e);
-    // IS_COMPOSING_STATE.delete(editor);
     switch (inputType) {
       case 'insertText':
         if (state.anchorNode) {
@@ -213,11 +213,7 @@ class Selection extends HTMLElement {
               nodeKey.text = [...(splitText?.slice(0, state.anchorOffset || 0) || []), e.data, ...(splitText?.slice(state.anchorOffset || 0, splitText.length) || [])].join('');
             }
             editor.render().then(data => {
-              // console.log('insertTextRender');
               editor.Selection.modify('move', 'right', 'character');
-              // if (isComposing) {
-              // editor.Selection.modify('move', 'right', 'character');
-              // }
             });
           }
         }
@@ -244,38 +240,29 @@ class Selection extends HTMLElement {
     // console.log('compositonType', compositonType);
     switch (compositonType) {
       case 'compositionstart':
-        if (IS_COMPOSING_STATE.has(editor)) {
-          const state = IS_COMPOSING_STATE.get(editor);
-          console.log('is', state);
-          if (state) {
-            const newState = {
-              ...state,
-              anchorOffset: isComposing ? (state.anchorOffset || 0) + 1 : state.anchorOffset,
-            };
-            IS_COMPOSING_STATE.set(editor, newState);
-          }
-        }
+        this.state = {
+          ...this.state,
+          anchorOffset: isComposing ? (this.state.anchorOffset || 0) + 1 : this.state.anchorOffset || 0,
+        };
+        console.log('compositionstart', this.state);
         Grid.imeUpdate(editor);
-        if (IS_COMPOSING_STATE.has(editor) === false) {
-          IS_COMPOSING_STATE.set(editor, state);
-          // this.state = state;
-        }
         break;
       case 'compositionupdate':
         imeElement.textContent = e.data || '';
         Grid.insert(editor);
+        console.log('compositionupdate', this.state);
         break;
       case 'compositionend':
         {
-          const state = IS_COMPOSING_STATE.get(editor);
+          console.log('compositionend', this.state);
+          const state = this.state;
           if (state) {
-            this.state = state;
             const nodeKey = editor.weakMap.get(state.anchorNode!);
             const splitText = nodeKey?.text?.split('');
             if (nodeKey && state.location && state.location.text) {
               const text = imeElement.textContent?.trimEnd() || '';
               imeElement.remove();
-              nodeKey.text = [...(splitText?.slice(0, state.anchorOffset || 0) || []), text, ...(splitText?.slice(state.anchorOffset || 0, splitText.length) || [])].join('');
+              nodeKey.text = [...(splitText?.slice(0, state.anchorOffset || 0) || []), text, ...(splitText?.slice(state.anchorIndex || 0, splitText.length) || [])].join('');
             }
             (e.currentTarget as HTMLDivElement).textContent = '';
             editor.render().then(() => {
@@ -363,7 +350,7 @@ class Selection extends HTMLElement {
         }
       }
 
-      this.setState({
+      this.setState = {
         ...this.state,
         anchorOffset: grid[anchorIdx].offset,
         anchorNode: grid[anchorIdx].node,
@@ -374,19 +361,8 @@ class Selection extends HTMLElement {
         location: grid[focusIdx],
         isCollased: alter !== 'move',
         type: alter === 'move' ? 'Caret' : 'Range',
-      });
+      };
     }
-  }
-
-  async setState(value: SelectionState) {
-    // const oriState = this.state;
-    this.state = {
-      ...this.state,
-      ...value,
-    };
-    this.render().then(() => {
-      // IS_COMPOSING_STATE.set(this.editor, oriState);
-    });
   }
 
   mousedown(e: MouseEvent, editor: EditorElement) {
@@ -397,7 +373,7 @@ class Selection extends HTMLElement {
     const y = editor.wrapper.scrollTop + e.offsetY;
     const Idx = this.grid.findIndex(cell => cell.top < y && cell.bottom > y && cell.left < x && cell.right > x);
     if (Idx !== -1) {
-      this.setState({
+      this.setState = {
         ...this.state,
         anchorOffset: this.grid[Idx].offset,
         anchorNode: this.grid[Idx].node,
@@ -408,7 +384,7 @@ class Selection extends HTMLElement {
         location: this.grid[Idx],
         isCollased: false,
         type: 'Caret',
-      });
+      };
     }
   }
 

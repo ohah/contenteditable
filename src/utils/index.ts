@@ -97,4 +97,3 @@ Object.prototype.isEquals = (obj1, obj2) => {
 };
 
 export const IS_COMPOSING: WeakMap<Editor, boolean> = new WeakMap();
-export const IS_COMPOSING_STATE: WeakMap<Editor, SelectionState> = new WeakMap();
