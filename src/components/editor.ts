@@ -59,7 +59,7 @@ class EditorElement extends HTMLElement {
    */
   wrapper: HTMLDivElement;
 
-  #view: HTMLDivElement;
+  view: HTMLDivElement;
 
   #observers: ObserverMap;
 
@@ -74,7 +74,7 @@ class EditorElement extends HTMLElement {
     // this.setAttribute('tabIndex', '-1');
     this.wrapper = document.createElement('div');
     this.wrapper.setAttribute('tabIndex', '-1');
-    this.#view = document.createElement('div');
+    this.view = document.createElement('div');
     this.FiberData = [];
     this.#Selection = new Selection(this);
     this.wrapper.appendChild(this.#Selection);
@@ -109,9 +109,9 @@ class EditorElement extends HTMLElement {
     if (this.data) {
       this.FiberData = json2EditorFiberNode(this.data);
     } else {
-      this.#view = document.createElement('div');
-      this.#view.classList.add('editor');
-      this.wrapper.appendChild(this.#view);
+      this.view = document.createElement('div');
+      this.view.classList.add('editor');
+      this.wrapper.appendChild(this.view);
     }
     this.render();
     // const MutaionObserver = new MutationObserver((mutationList, observer) => {
@@ -127,18 +127,18 @@ class EditorElement extends HTMLElement {
   }
 
   async render() {
-    this.#view?.remove();
+    this.view?.remove();
     const { fragment, node } = json2EditorNode(this.FiberData, this.#FiberNodeWeakMap, this.#FiberNodeMap);
     this.wrapper.appendChild(fragment);
-    this.#view = node;
+    this.view = node;
     return Grid.create(this);
   }
 
   async render2() {
-    this.#view?.remove();
+    this.view?.remove();
     const { fragment, node } = json2EditorNode(this.FiberData, this.#FiberNodeWeakMap, this.#FiberNodeMap);
     this.wrapper.appendChild(fragment);
-    this.#view = node;
+    this.view = node;
     return Grid.create(this);
   }
 
@@ -165,14 +165,6 @@ class EditorElement extends HTMLElement {
 
   get FiberNodeMap() {
     return this.#FiberNodeMap;
-  }
-
-  set view(view: HTMLDivElement) {
-    this.#view = view;
-  }
-
-  get view() {
-    return this.#view;
   }
 
   connectedCallback() {

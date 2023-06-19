@@ -31,6 +31,30 @@ export type GridLocation = Location;
 // }
 
 const Grid = {
+  set: async (editor: EditorElement) => {
+    return new Promise(resolve => {
+      window.requestAnimationFrame(() => {
+        const walker = document.createTreeWalker(editor.view, NodeFilter.SHOW_ALL, {
+          acceptNode: function (node) {
+            if (node.nodeType === Node.TEXT_NODE || node.nodeName.toLowerCase() === 'img') {
+              return NodeFilter.FILTER_ACCEPT;
+            }
+            return NodeFilter.FILTER_SKIP;
+          },
+        });
+        while (walker.nextNode()) {
+          const node = walker.currentNode as Element;
+          const tagName = node.nodeName.toLowerCase();
+          console.log('tagName', tagName, node);
+          const range = new globalThis.Range();
+          // console.log(node.getBoundingClientRect());
+          range.selectNodeContents(node);
+          const position = range.getBoundingClientRect();
+          console.log(position);
+        }
+      });
+    });
+  },
   create: async (editor: EditorElement): Promise<GridLocation[]> => {
     return new Promise(resolve => {
       const { weakMap } = editor;

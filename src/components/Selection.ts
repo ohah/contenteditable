@@ -141,9 +141,12 @@ class Selection extends HTMLElement {
 
     this.#caret = new Caret();
     this.#range = new Range();
-
-    this.editor.addEventListener('mousedown', e => {
-      this.mousedown(e, editor);
+    window.requestAnimationFrame(() => {
+      console.log('this.editor.view', this.editor.view);
+      this.editor.view.addEventListener('mousedown', e => {
+        // console.log('shadowRoot', this.editor.view, editor);
+        this.mousedown(e, editor);
+      });
     });
 
     this.editor.wrapper.addEventListener('keydown', e => {
@@ -368,9 +371,10 @@ class Selection extends HTMLElement {
   mousedown(e: MouseEvent, editor: EditorElement) {
     // console.log(e);
     const { grid } = this;
-    // console.log(editor);
+    console.log(e.target, editor);
     const x = editor.wrapper.scrollLeft + e.offsetX;
     const y = editor.wrapper.scrollTop + e.offsetY;
+    console.log('x, y', x, y, e);
     const Idx = this.grid.findIndex(cell => cell.top < y && cell.bottom > y && cell.left < x && cell.right > x);
     if (Idx !== -1) {
       this.setState = {

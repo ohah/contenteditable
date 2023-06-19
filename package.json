@@ -31,7 +31,7 @@
     "msw": "latest",
     "prettier": "latest",
     "typescript": "latest",
-    "vite": "latest",
+    "vite": "^4.3.9",
     "vite-plugin-eslint": "latest",
     "vite-tsconfig-paths": "latest",
     "vitest": "latest"
