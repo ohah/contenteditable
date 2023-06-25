@@ -144,9 +144,12 @@ class Selection extends HTMLElement {
     window.requestAnimationFrame(() => {
       console.log('this.editor.view', this.editor.view);
       this.editor.view.addEventListener('mousedown', e => {
-        // console.log('shadowRoot', this.editor.view, editor);
-        this.mousedown(e, editor);
+        this.mousedown(e, this.editor);
       });
+      // this.editor.view.addEventListener('mousedown', e => {
+      // console.log('shadowRoot', this.editor.view, editor);
+      // this.mousedown(e, editor);
+      // });
     });
 
     this.editor.wrapper.addEventListener('keydown', e => {
@@ -369,27 +372,28 @@ class Selection extends HTMLElement {
   }
 
   mousedown(e: MouseEvent, editor: EditorElement) {
+    Grid.set(editor, e);
     // console.log(e);
-    const { grid } = this;
-    console.log(e.target, editor);
-    const x = editor.wrapper.scrollLeft + e.offsetX;
-    const y = editor.wrapper.scrollTop + e.offsetY;
-    console.log('x, y', x, y, e);
-    const Idx = this.grid.findIndex(cell => cell.top < y && cell.bottom > y && cell.left < x && cell.right > x);
-    if (Idx !== -1) {
-      this.setState = {
-        ...this.state,
-        anchorOffset: this.grid[Idx].offset,
-        anchorNode: this.grid[Idx].node,
-        anchorIndex: Idx,
-        focusOffset: this.grid[Idx].offset,
-        focusNode: this.grid[Idx].node,
-        focusIndex: Idx,
-        location: this.grid[Idx],
-        isCollased: false,
-        type: 'Caret',
-      };
-    }
+    // const { grid } = this;
+    // console.log(e.target, editor);
+    // const x = editor.wrapper.scrollLeft + e.offsetX;
+    // const y = editor.wrapper.scrollTop + e.offsetY;
+    // console.log('x, y', x, y, e);
+    // const Idx = this.grid.findIndex(cell => cell.top < y && cell.bottom > y && cell.left < x && cell.right > x);
+    // if (Idx !== -1) {
+    //   this.setState = {
+    //     ...this.state,
+    //     anchorOffset: this.grid[Idx].offset,
+    //     anchorNode: this.grid[Idx].node,
+    //     anchorIndex: Idx,
+    //     focusOffset: this.grid[Idx].offset,
+    //     focusNode: this.grid[Idx].node,
+    //     focusIndex: Idx,
+    //     location: this.grid[Idx],
+    //     isCollased: false,
+    //     type: 'Caret',
+    //   };
+    // }
   }
 
   connectedCallback(): void {

@@ -96,4 +96,30 @@ Object.prototype.isEquals = (obj1, obj2) => {
   return true;
 };
 
+export const BROWSER_ENGINE = {
+  WEBKIT: 'AppleWebKit',
+  BLINK: 'Blink',
+  GECKO: 'Gecko',
+  TRIDENT: 'Trident',
+  UNKNOWN: 'unknown',
+} as const;
+
+export type BrowserEngine = (typeof BROWSER_ENGINE)[keyof typeof BROWSER_ENGINE];
+
+export const isPlatform = (): BrowserEngine => {
+  const engine = navigator.userAgent.match(/(AppleWebKit|Blink|Gecko|Trident)/)![0];
+  switch (engine) {
+    case BROWSER_ENGINE.WEBKIT: // Apple
+      return engine;
+    case BROWSER_ENGINE.BLINK: // Chromium
+      return engine;
+    case BROWSER_ENGINE.GECKO: // FireFox
+      return engine;
+    case BROWSER_ENGINE.TRIDENT:
+      return engine;
+    default:
+      return BROWSER_ENGINE.UNKNOWN;
+  }
+};
+
 export const IS_COMPOSING: WeakMap<Editor, boolean> = new WeakMap();
