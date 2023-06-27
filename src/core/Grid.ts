@@ -33,20 +33,26 @@ export type GridLocation = Location;
 
 const Grid = {
   set: async (editor: EditorElement, e: MouseEvent) => {
-    const posX = editor.wrapper.scrollLeft + e.offsetX;
-    const posY = editor.wrapper.scrollTop + e.offsetY;
-    console.log(posX, posY);
+    // console.log('e', e.);
     const target: HTMLElement = isPlatform() === BROWSER_ENGINE.WEBKIT ? (e.composedPath()[0] as HTMLElement) : (e.target as HTMLElement);
+    // console.log(posX, posY, e.clientX, e.clientY, e.offsetX, e.offsetY);
+    // console.log(posX, e.clientX, e.offsetX, e.pageX);
+    // console.dir(e.target);
 
     // console.log(target, x, y);
 
     const editorRect = editor.getBoundingClientRect();
+    const { top, left } = target.getBoundingClientRect();
+    const posX = editor.wrapper.scrollLeft + e.offsetX + left - editorRect.left;
+    const posY = editor.wrapper.scrollTop + e.offsetY + top - editorRect.top;
+    console.log('top', top, left);
+    console.log('pos', posX, posY);
     const lineRange = new Range();
     const range = new globalThis.Range();
     if (target) {
       let brTop: number | null = null;
       let line = 1;
-      console.log('walker', target);
+      // console.log('walker', target);
       const tagName = target.nodeName.toLowerCase();
       // console.log('tagName', tagName);
       // if (!['span', 'br', 'u'].includes(tagName)) {
@@ -54,7 +60,7 @@ const Grid = {
       //   // span, br 태그를 제외한 모든 태그는 개행이 된다
       //   line += 1;
       // }
-      console.log('tagName', tagName);
+      // console.log('tagName', tagName);
 
       if (['span', 'br', 'u'].includes(tagName)) {
         if (target.firstChild && target.childNodes.length === 1) {
@@ -68,7 +74,7 @@ const Grid = {
           lineRange.selectNode(target);
         }
         const topRects = Array.from(lineRange.getClientRects()).map(rect => rect.top);
-        console.log('topRects', topRects);
+        // console.log('topRects', topRects);
         if (topRects.length > 1 && tagName !== 'u') {
           // wordrap현상으로(글이 길어서 라인이 바뀔때) 개행을 구해준다.
           line += topRects.length - 1;
@@ -76,6 +82,7 @@ const Grid = {
         editor.shadowRoot?.querySelectorAll('[data-caret-area]').forEach(ele => {
           ele.remove();
         });
+        const result: any[] = [];
         Array.from(target.childNodes).forEach(item => {
           const text = item.textContent;
           const length = text?.length || 0;
@@ -92,7 +99,7 @@ const Grid = {
               // }
               // console.log(x);
               const cell = {
-                key: 'asdf',
+                key: editor.weakMap.get(item)?.key || '',
                 line: line - (topRects.length - topRects.findIndex(item => item === top)),
                 x: x - editorRect.x,
                 y: y - editorRect.y,
@@ -106,16 +113,30 @@ const Grid = {
                 offset: i,
                 text: range.toString(),
               };
+              result.push(cell);
               // console.log('으앙', top - editorRect.top < y && bottom - editorRect.top > y && left - editorRect.left < x - editorRect.x && right - editorRect.left > x - editorRect.x);
               // const Idx = this.grid.findIndex(cell => cell.top < y && cell.bottom > y && cell.left < x && cell.right > x);
               if (cell.top < posY && cell.bottom > posY && cell.left < posX && cell.right > posX) {
-                console.log('으앙2', char);
-                // break;
+                console.log('cell', cell.left, cell.right, posX, cell.text);
+                editor.Selection.setState = {
+                  ...editor.Selection.state,
+                  anchorOffset: i,
+                  anchorNode: item,
+                  anchorIndex: i,
+                  focusOffset: i,
+                  focusNode: item,
+                  focusIndex: i,
+                  location: cell,
+                  isCollased: false,
+                  type: 'Caret',
+                };
+                // Cell.testBlock(editor, cell);
+                break;
               }
-              Cell.testBlock(editor, cell);
             }
           }
         });
+        console.table(result, ['text', 'left', 'right', 'top', 'bottom']);
       } else {
         const walker = document.createTreeWalker(target as HTMLElement, NodeFilter.SHOW_ELEMENT, {
           acceptNode: function () {

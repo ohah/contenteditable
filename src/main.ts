@@ -10,7 +10,7 @@ const editor = new EditorElement({
       children: [
         {
           type: 'text',
-          text: '12345678910111213415161718192021222324252627282930',
+          text: 'l10!010|0',
           format: ['bold'],
         },
         {
