@@ -4,7 +4,7 @@ module.exports = {
     browser: true,
     es2021: true,
   },
-  extends: ['eslint:recommended', 'plugin:react/recommended', 'plugin:@typescript-eslint/recommended', 'airbnb', 'plugin:prettier/recommended'],
+  extends: ['eslint:recommended', 'plugin:@typescript-eslint/recommended', 'airbnb', 'plugin:prettier/recommended'],
   overrides: [
     {
       files: '**/+.*(ts|tsx)',
@@ -21,38 +21,17 @@ module.exports = {
     ecmaVersion: 'latest',
     sourceType: 'module',
   },
-  plugins: ['react', 'react-hooks', 'jsx-a11y', '@typescript-eslint', 'prettier'],
+  plugins: ['jsx-a11y', '@typescript-eslint', 'prettier'],
   rules: {
     'linebreak-style': 'off',
     'import/newline-after-import': 'off',
     'import/first': 'off',
     'import/no-absolute-path': 'off',
     'import/no-extraneous-dependencies': 'off',
-    'react/prop-types': 'off',
-    'react/react-in-jsx-scope': 'off',
     'no-empty-function': 'off',
-    'react/jsx-props-no-spreading': 'off',
     '@typescript-eslint/no-empty-function': 'off',
     'import/prefer-default-export': 'off',
-    'react/function-component-definition': [
-      'error',
-      {
-        namedComponents: ['function-declaration', 'arrow-function'],
-        unnamedComponents: 'arrow-function',
-      },
-    ],
-    'react/jsx-filename-extension': [
-      1,
-      {
-        extensions: ['.tsx'],
-      },
-    ],
     'object-shorthand': ['off', 'always'],
-    'react/destructuring-assignment': 'off',
-    'react/no-unused-prop-types': 'off',
-    'react/require-default-props': 'off',
-    'react/jsx-child-element-spacing': 'off',
-    'react/jsx-one-expression-per-line': 'off',
     'jsx-dev-runtime': 'off',
     'import/order': [
       'error',
@@ -63,11 +42,6 @@ module.exports = {
           caseInsensitive: true,
         },
         pathGroups: [
-          {
-            pattern: '{react*,react*/**,react-dom/*,react-router-dom/*,recoil}',
-            group: 'external',
-            position: 'before',
-          },
           {
             pattern: '{@tanstack*/**,@**/**,msw*,axios*}',
             group: 'external',
@@ -94,7 +68,7 @@ module.exports = {
             group: 'unknown',
           },
         ],
-        pathGroupsExcludedImportTypes: ['react', 'unknown', 'index'],
+        pathGroupsExcludedImportTypes: ['unknown', 'index'],
         'newlines-between': 'always',
       },
     ],

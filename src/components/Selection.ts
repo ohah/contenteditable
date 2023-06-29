@@ -154,7 +154,8 @@ class Selection extends HTMLElement {
 
     this.editor.wrapper.addEventListener('keydown', e => {
       if (e.key === 'ArrowRight') {
-        this.modify('move', 'right', 'character');
+        this.#range.move();
+        // this.modify('move', 'right', 'character');
       }
       if (e.key === 'ArrowUp') {
         this.modify('move', 'up', 'character');
@@ -190,12 +191,10 @@ class Selection extends HTMLElement {
       ...this.state,
       ..._state,
     };
-    const range = new Range(this.editor);
-    if (_state.location?.range) {
-      // range.setStart(_state.location?.range);
-    }
     // const range = _state.location?.range;
-    this.#range = new Range(this.editor);
+    if (_state.location?.range) {
+      this.#range.setRange = _state.location?.range;
+    }
     this.render();
   }
 
@@ -305,7 +304,7 @@ class Selection extends HTMLElement {
         this.#caret.setAttribute('height', `${height}px`);
         this.#wrapper.appendChild(this.#caret);
       } else {
-        // this.removeChild(this.#caret)
+        this.removeChild(this.#caret);
       }
       this.editor.focus();
       if (this.state.anchorNode) {
