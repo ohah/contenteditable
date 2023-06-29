@@ -2,11 +2,11 @@
 /* eslint-disable no-useless-constructor */
 /* eslint-disable class-methods-use-this */
 
-import { SelectionInputEvent } from 'core';
+import { SelectionInputEvent, Range } from 'core';
 import Grid, { Location } from 'core/Grid';
 import { initialSelectState, SelectionState } from 'core/State';
 
-import { Caret, Range } from 'components';
+import { Caret } from 'components';
 import { define } from 'components/default';
 import EditorElement from 'components/Editor';
 import { IS_COMPOSING } from 'utils';
@@ -140,7 +140,7 @@ class Selection extends HTMLElement {
     this.appendChild(this.#contentEditable);
 
     this.#caret = new Caret();
-    this.#range = new Range();
+    this.#range = new Range(editor);
     window.requestAnimationFrame(() => {
       console.log('this.editor.view', this.editor.view);
       this.editor.view.addEventListener('mousedown', e => {
@@ -190,6 +190,12 @@ class Selection extends HTMLElement {
       ...this.state,
       ..._state,
     };
+    const range = new Range(this.editor);
+    if (_state.location?.range) {
+      // range.setStart(_state.location?.range);
+    }
+    // const range = _state.location?.range;
+    this.#range = new Range(this.editor);
     this.render();
   }
 
@@ -285,11 +291,18 @@ class Selection extends HTMLElement {
   render() {
     return new Promise(resolve => {
       if (this.state.type === 'Caret') {
+        const range = this.#range;
+        const { top, left, height, width } = range.getBoundingClientRect();
+        console.log('top', top);
         // this.removeChild(this.#range);
-        this.#caret.setAttribute('top', `${this.state.location?.top}px`);
-        this.#caret.setAttribute('left', `${this.state.location?.left}px`);
-        this.#caret.setAttribute('width', `${this.state.location?.text ? this.state.location?.width : '5'}px`);
-        this.#caret.setAttribute('height', `${this.state.location?.height}px`);
+        // this.#caret.setAttribute('top', `${this.state.location?.top}px`);
+        // this.#caret.setAttribute('left', `${this.state.location?.left}px`);
+        // this.#caret.setAttribute('width', `${this.state.location?.text ? this.state.location?.width : '5'}px`);
+        // this.#caret.setAttribute('height', `${this.state.location?.height}px`);
+        this.#caret.setAttribute('top', `${top}}px`);
+        this.#caret.setAttribute('left', `${left}px`);
+        this.#caret.setAttribute('width', `${this.state.location?.text ? width : '5'}px`);
+        this.#caret.setAttribute('height', `${height}px`);
         this.#wrapper.appendChild(this.#caret);
       } else {
         // this.removeChild(this.#caret)
@@ -299,76 +312,86 @@ class Selection extends HTMLElement {
         this.editor.wrapper.after(this.#debug);
         this.#debug.innerText = JSON.stringify(this.state, null, 2);
       }
-      Grid.create(this.editor).then(data => {
-        this.#contentEditable.focus();
-        resolve(data);
-      });
+      // Grid.create(this.editor).then(data => {
+      //   this.#contentEditable.focus();
+      //   resolve(data);
+      // });
     });
   }
 
   modify(alter: 'move' | 'extend', direction: 'left' | 'right' | 'up' | 'down', granularity: 'character' | 'word' | 'sentence' | 'line' | 'paragraph') {
     if (typeof this.state.focusIndex !== 'number') return;
     const { grid, state } = this;
-    if (typeof this.state.focusIndex === 'number' && typeof this.state.anchorIndex === 'number') {
-      let focusIdx = this.state.focusIndex;
-      let anchorIdx = this.state.anchorIndex;
-      let moveIdx = 1;
+    if (state.location) {
+      const { range } = state.location;
+      if (range) {
+        console.log('range', range);
 
-      if (direction === 'left') {
-        moveIdx *= -1;
+        const text = document.createTextNode('g');
+        range.insertNode(text);
+        // range.setStart(range.startContainer)
       }
-
-      if (granularity === 'word') {
-        const cell = grid[focusIdx];
-        moveIdx = (cell.node.textContent?.length || 0) - (cell.offset || 0);
-      }
-
-      if (alter === 'move') {
-        if (['left', 'right'].includes(direction)) {
-          focusIdx += moveIdx;
-          anchorIdx += moveIdx;
-          if (this.state?.position) {
-            delete this.state.position;
-          }
-        }
-        if (['up', 'down'].includes(direction)) {
-          if (this.state.location) {
-            if (!this.state?.position) {
-              this.state.position = this.state.location;
-            }
-            moveIdx = direction === 'up' ? -1 : 1;
-            const line = grid.filter(cell => cell.line === moveIdx + (this.state?.location?.line || 0));
-            const { x, y } = this.state.position;
-            const lineCell = line.findLast(cell => cell.left <= x && cell.right >= x);
-            if (lineCell) {
-              const Idx = grid.findIndex(cell => Object.isEquals(cell, lineCell));
-              anchorIdx = Idx;
-              focusIdx = Idx;
-            }
-          }
-        }
-      }
-
-      if (alter === 'extend') {
-        if (['left', 'right'].includes(direction)) {
-          focusIdx += moveIdx;
-          anchorIdx = moveIdx;
-        }
-      }
-
-      this.setState = {
-        ...this.state,
-        anchorOffset: grid[anchorIdx].offset,
-        anchorNode: grid[anchorIdx].node,
-        anchorIndex: anchorIdx,
-        focusOffset: grid[focusIdx].offset,
-        focusNode: grid[focusIdx].node,
-        focusIndex: focusIdx,
-        location: grid[focusIdx],
-        isCollased: alter !== 'move',
-        type: alter === 'move' ? 'Caret' : 'Range',
-      };
     }
+    // if (typeof this.state.focusIndex === 'number' && typeof this.state.anchorIndex === 'number') {
+    //   let focusIdx = this.state.focusIndex;
+    //   let anchorIdx = this.state.anchorIndex;
+    //   let moveIdx = 1;
+
+    //   if (direction === 'left') {
+    //     moveIdx *= -1;
+    //   }
+
+    //   if (granularity === 'word') {
+    //     const cell = grid[focusIdx];
+    //     moveIdx = (cell.node.textContent?.length || 0) - (cell.offset || 0);
+    //   }
+
+    //   if (alter === 'move') {
+    //     if (['left', 'right'].includes(direction)) {
+    //       focusIdx += moveIdx;
+    //       anchorIdx += moveIdx;
+    //       if (this.state?.position) {
+    //         delete this.state.position;
+    //       }
+    //     }
+    //     if (['up', 'down'].includes(direction)) {
+    //       if (this.state.location) {
+    //         if (!this.state?.position) {
+    //           this.state.position = this.state.location;
+    //         }
+    //         moveIdx = direction === 'up' ? -1 : 1;
+    //         const line = grid.filter(cell => cell.line === moveIdx + (this.state?.location?.line || 0));
+    //         const { x, y } = this.state.position;
+    //         const lineCell = line.findLast(cell => cell.left <= x && cell.right >= x);
+    //         if (lineCell) {
+    //           const Idx = grid.findIndex(cell => Object.isEquals(cell, lineCell));
+    //           anchorIdx = Idx;
+    //           focusIdx = Idx;
+    //         }
+    //       }
+    //     }
+    //   }
+
+    //   if (alter === 'extend') {
+    //     if (['left', 'right'].includes(direction)) {
+    //       focusIdx += moveIdx;
+    //       anchorIdx = moveIdx;
+    //     }
+    //   }
+
+    //   this.setState = {
+    //     ...this.state,
+    //     anchorOffset: grid[anchorIdx].offset,
+    //     anchorNode: grid[anchorIdx].node,
+    //     anchorIndex: anchorIdx,
+    //     focusOffset: grid[focusIdx].offset,
+    //     focusNode: grid[focusIdx].node,
+    //     focusIndex: focusIdx,
+    //     location: grid[focusIdx],
+    //     isCollased: alter !== 'move',
+    //     type: alter === 'move' ? 'Caret' : 'Range',
+    //   };
+    // }
   }
 
   mousedown(e: MouseEvent, editor: EditorElement) {

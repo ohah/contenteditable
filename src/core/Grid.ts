@@ -1,6 +1,7 @@
 /* eslint-disable no-loop-func */
 /* eslint-disable no-param-reassign */
 import { Cell } from 'core';
+// import { Range } from 'core';
 
 import { EditorElement } from 'components';
 import { BROWSER_ENGINE, isPlatform } from 'utils';
@@ -24,6 +25,7 @@ export interface Location {
   text?: string;
   offset?: number;
   line: number;
+  range: Range;
 }
 
 export type GridLocation = Location;
@@ -48,7 +50,7 @@ const Grid = {
     console.log('top', top, left);
     console.log('pos', posX, posY);
     const lineRange = new Range();
-    const range = new globalThis.Range();
+    const range = new Range();
     if (target) {
       let brTop: number | null = null;
       let line = 1;
@@ -112,6 +114,7 @@ const Grid = {
                 node: target,
                 offset: i,
                 text: range.toString(),
+                range,
               };
               result.push(cell);
               // console.log('으앙', top - editorRect.top < y && bottom - editorRect.top > y && left - editorRect.left < x - editorRect.x && right - editorRect.left > x - editorRect.x);
@@ -265,6 +268,7 @@ const Grid = {
                     node: walker.currentNode,
                     offset: i,
                     text: range.toString(),
+                    range,
                   });
                   if (length - 1 === i) {
                     if (!node.nextElementSibling) {
@@ -280,6 +284,7 @@ const Grid = {
                         right: editor.offsetWidth - left,
                         bottom: bottom - editorRect.top,
                         node: walker.currentNode,
+                        range,
                       });
                     }
                   }
